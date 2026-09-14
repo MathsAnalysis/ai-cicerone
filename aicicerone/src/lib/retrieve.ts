@@ -9,7 +9,7 @@ export type Source = { title: string; url: string; text: string };
 
 const UA = 'AiCicerone/1.0 (tour guide app; info@aicicerone.com)';
 const TIMEOUT = 4000;
-const MAX_CHARS = 900;
+const MAX_CHARS = 400; // 2 vCPU: ogni 100 caratteri di fonte costano ~1 s di prompt eval
 const SHORT_INTRO = 300; // sotto questa lunghezza l'incipit non basta: si scarica un estratto più lungo
 
 function clean(s: string): string {
@@ -19,7 +19,7 @@ function clean(s: string): string {
 // Estratto dall'inizio della voce (non solo l'incipit): per voci con introduzione di una riga.
 async function longer(title: string, lang: Lang): Promise<string> {
   const u = new URL(`https://${lang}.wikipedia.org/w/api.php`);
-  u.search = new URLSearchParams({ action: 'query', prop: 'extracts', titles: title, exchars: '1200', explaintext: '1', format: 'json' }).toString();
+  u.search = new URLSearchParams({ action: 'query', prop: 'extracts', titles: title, exchars: '600', explaintext: '1', format: 'json' }).toString();
   const r = await fetch(u, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(TIMEOUT) });
   if (!r.ok) return '';
   const j = (await r.json()) as { query?: { pages?: Record<string, { extract?: string }> } };
@@ -29,8 +29,8 @@ async function longer(title: string, lang: Lang): Promise<string> {
 async function wikipedia(q: string, lang: Lang): Promise<Source[]> {
   const u = new URL(`https://${lang}.wikipedia.org/w/api.php`);
   u.search = new URLSearchParams({
-    action: 'query', generator: 'search', gsrsearch: q, gsrlimit: '8', gsrnamespace: '0',
-    prop: 'extracts|info', exintro: '1', explaintext: '1', exlimit: '8', inprop: 'url', format: 'json',
+    action: 'query', generator: 'search', gsrsearch: q, gsrlimit: '3', gsrnamespace: '0',
+    prop: 'extracts|info', exintro: '1', explaintext: '1', exlimit: '3', inprop: 'url', format: 'json',
   }).toString();
   const r = await fetch(u, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(TIMEOUT) });
   if (!r.ok) return [];
@@ -53,7 +53,7 @@ async function searxng(q: string, lang: Lang): Promise<Source[]> {
   const j = (await r.json()) as { results?: { title?: string; url?: string; content?: string }[] };
   return (j.results ?? [])
     .filter((x) => x.title && x.url && x.content)
-    .slice(0, 4)
+    .slice(0, 2)
     .map((x) => ({ title: x.title!, url: x.url!, text: clean(x.content!) }));
 }
 
@@ -110,5 +110,5 @@ export async function retrieve(question: string, lang: Lang, city: string): Prom
       out.push(src);
     }
   }
-  return out.slice(0, 10);
+  return out.slice(0, 5);
 }

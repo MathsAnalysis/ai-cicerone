@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         options: { temperature: 0.2, num_predict: 400, num_ctx: 8192 },
         messages: [{ role: 'system', content: system }, ...outgoing],
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(180_000),
     });
   } catch (e) {
     console.error('chat: LLM non raggiungibile', env.llmUrl, e instanceof Error ? e.message : e);

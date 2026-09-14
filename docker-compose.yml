@@ -30,9 +30,15 @@ services:
     image: ollama/ollama:latest
     container_name: aicicerone-ollama
     restart: unless-stopped
+    # 2 vCPU senza GPU: un solo slot così la cache del prefisso (persona + testi tour) resta valida
+    # tra una domanda e l'altra (prompt eval da ~90 s a ~3 s); modello sempre caricato, KV cache q8.
     environment:
-      OLLAMA_KEEP_ALIVE: 30m
-      OLLAMA_NUM_PARALLEL: 2
+      OLLAMA_KEEP_ALIVE: -1
+      OLLAMA_NUM_PARALLEL: 1
+      OLLAMA_MAX_LOADED_MODELS: 1
+      OLLAMA_FLASH_ATTENTION: 1
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_LOAD_TIMEOUT: 10m
     volumes:
       - ollama:/root/.ollama
     logging:

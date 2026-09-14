@@ -1,0 +1,83 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Foot from '../../../components/Foot.astro';
+import TourApp from '../../../components/tour/TourApp';
+import { DEST, TOURS } from '../../../data/tours';
+import { I18N, fill } from '../../../i18n';
+
+export function getStaticPaths() {
+  const paths: { params: { dest: string; tour: string } }[] = [];
+  for (const [dest, d] of Object.entries(DEST)) {
+    for (const tour of d.tours) if (!TOURS[tour].soon) paths.push({ params: { dest, tour } });
+  }
+  return paths;
+}
+
+const { dest, tour } = Astro.params;
+const d = DEST[dest!];
+const t = TOURS[tour!];
+const T = I18N[d.lang];
+const guides = t.guides.filter((g) => !g.soon).map((g) => g.name).join(', ');
+const n = t.stops.length + (t.optional ? 1 : 0);
+const title = fill(T.seoTitle, { name: t.name, city: t.city, n });
+const description = fill(T.seoDesc, { city: t.city, n, guide: guides, stops: `${t.stops.slice(0, 5).map((s) => s.t).join(', ')}…` });
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristTrip',
+  name: t.name,
+  description,
+  inLanguage: d.lang,
+  touristType: 'Independent traveller',
+  provider: { '@type': 'Organization', name: 'AiCicerone Ltd.', url: Astro.site },
+  itinerary: {
+    '@type': 'ItemList',
+    numberOfItems: t.stops.length,
+    itemListElement: t.stops.map((s, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'TouristAttraction',
+        name: s.t,
+        description: s.d,
+        address: `${s.p}, ${t.city}`,
+        geo: { '@type': 'GeoCoordinates', latitude: s.c[0], longitude: s.c[1] },
+      },
+    })),
+  },
+};
+
+// Elenco statico delle tappe: leggibile prima di partire e indicizzabile dai motori di ricerca.
+type Row = { num: string; t: string; p: string; d: string; opt?: boolean; zone?: string; transfer?: string };
+const rows: Row[] = [];
+t.stops.forEach((s, i) => {
+  const num = i + 1;
+  if (t.optional && t.optional.after === i) rows.push({ num: t.optional.label, t: t.optional.t, p: t.optional.p, d: t.optional.d, opt: true });
+  rows.push({ num: String(num), t: s.t, p: s.p, d: s.d, zone: t.zones?.[num], transfer: t.transferBefore === num ? t.transferTxt : undefined });
+});
+---
+
+<Base lang={d.lang} title={title} description={description} jsonLd={jsonLd}>
+  <TourApp client:load dest={dest!} tour={tour!} />
+  <section id="itinerary" class="px-6 pt-7 pb-2">
+    <p class="eyebrow">{t.city} · {t.dur}</p>
+    <h2 class="mt-1 text-[22px]">{T.itinSeo}</h2>
+    <ol class="m-0 mt-4 flex list-none flex-col gap-4 p-0">
+      {rows.map((r) => (
+        <li>
+          {r.zone && <p class="mb-2 text-[11px] font-bold tracking-[0.14em] text-blu uppercase">{r.zone}</p>}
+          {r.transfer && <p class="mb-3 rounded-[11px] bg-beige px-3.5 py-[11px] text-[12.5px] leading-[1.45] text-[#5c6672]">{r.transfer}</p>}
+          <div class="flex items-start gap-3">
+            <span class={`grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-[11px] font-semibold ${r.opt ? 'border-[1.5px] border-dashed border-terra text-terra' : 'bg-beige text-mute'}`}>{r.num}</span>
+            <div>
+              <h3 class="m-0 text-[17px] leading-tight">{r.t}</h3>
+              <p class="mt-0.5 text-xs text-mute">{r.p}{r.opt && ` · ${T.optLabel}`}</p>
+              <p class="mt-1.5 text-sm leading-[1.55] text-[#4b5560] text-pretty">{r.d}</p>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+  <div class="flex-1"></div>
+  <Foot />
+</Base>

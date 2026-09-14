@@ -1,0 +1,11 @@
+Strumenti interni per correggere le coordinate delle tappe stando sul posto.
+Aprire da telefono su HTTPS (serve per il GPS).
+
+taratura-sicilia.html -> legge tours.js      (Catania, Siracusa)
+taratura-londra.html  -> legge tours-uk.js   (Rebuilding London)
+
+I file tours.js / tours-uk.js in questa cartella sono COPIE DI LAVORO usate
+solo dallo strumento. Il file dati dell'app e' ../tours-all.js.
+
+Flusso: si sposta il punto, si esporta il blocco COORDS, e si riportano i
+valori in ../tours-all.js (stessi array, campo "c").

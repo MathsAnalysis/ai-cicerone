@@ -1,0 +1,8 @@
+# SearXNG per la ricerca web dell'IA locale: serve solo il formato JSON, nessun limiter (uso interno).
+use_default_settings: true
+server:
+  limiter: false
+  image_proxy: false
+search:
+  safe_search: 1
+  formats: [html, json]

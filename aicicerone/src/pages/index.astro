@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import Foot from '../components/Foot.astro';
+import Logo from '../components/Logo.astro';
+import { DEST } from '../data/tours';
+import { I18N } from '../i18n';
+
+const T = I18N.en;
+const title = 'AiCicerone — AI Living Guides for bespoke walking tours';
+const description = 'Geo-triggered video tours of London and Sicily, narrated by the people who made these cities. No timetable, no group: your own bespoke tour.';
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'AiCicerone Ltd.',
+  url: Astro.site,
+  email: 'info@aicicerone.com',
+  logo: new URL('/apple-touch-icon.png', Astro.site),
+  slogan: T.claim,
+};
+---
+
+<Base lang="en" title={title} description={description} jsonLd={jsonLd}>
+  <Logo claim={T.claim} />
+  <main class="px-6">
+    <hr class="m-0 h-px border-0 bg-line" />
+    <h1 class="lede mt-[26px]">{T.lede1}<br /><em>{T.lede2}</em></h1>
+    <p class="sub mt-3">{T.destSub}</p>
+    <p class="eyebrow mt-[30px]">{T.destEyebrow}</p>
+    <nav class="mt-[18px] mb-1 flex flex-col gap-3" aria-label={T.destEyebrow}>
+      {Object.entries(DEST).map(([key, d]) => (
+        <a class="card" href={`/${key}/`}>
+          <span class="card-badge">{d.badge}</span>
+          <span><h3>{d.name}</h3><p>{d.sub}</p></span>
+          <span class="ml-auto text-[22px] leading-none text-blu" aria-hidden="true">›</span>
+        </a>
+      ))}
+    </nav>
+  </main>
+  <div class="flex-1"></div>
+  <Foot />
+</Base>

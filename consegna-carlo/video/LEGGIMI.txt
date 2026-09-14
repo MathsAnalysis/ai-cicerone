@@ -1,0 +1,45 @@
+Mettere qui i video verticali (9:16), con questi nomi esatti.
+La mappa nome->tappa e' in tours-all.js, oggetto VIDEOS.
+
+SICILIA (31 file, gia' prodotti)
+catania-01-piazza-duomo.mp4
+catania-02-Badia.mp4
+catania-03-Diocesano.mp4
+catania-04-Amenano.mp4
+catania-05-pescheria.mp4
+catania-06-Universita.mp4
+catania-07-teatrobellini.mp4
+catania-08-Stesicoro.mp4
+catania-09Villabellini.mp4
+catania-10-Monastero.mp4
+catania-11-BibliotecaUrsinoRecupero.mp4
+catania-12-viacrociferi.mp4
+catania-13-chiesa-sanbenedetto.mp4
+catania-14-Museo-Bellini.mp4
+catania-15-Teatro-greco-romano.mp4
+catania-16-Castello-Ursino.mp4
+sr-01-ponte-umbertino.mp4
+sr-02-tempio-apollo.mp4
+sr-03-Piazza-Archimede.mp4
+sr-04-Duomo.mp4
+sr-05-SantaLucia-Badia.mp4
+sr-06-fonte-aretusa.mp4
+sr-07-Palazzo-Bellomo.mp4
+sr-08-castello-maniace.mp4
+sr-09-teatro-greco.mp4
+sr-10-Orecchio-Dionisio.mp4
+sr-11-Ara-Ierone.mp4
+sr-12anfiteatro-romano.mp4
+sr-13-Museo-PaoloOrsi.mp4
+sr-14-Assedio-Romano.mp4
+sr-5b-sepolcro.mp4
+
+LONDRA (8 file, da produrre)
+Ldn-01-guildhall.mp4
+Ldn-02-st-bartholomew.mp4
+Ldn-03-st-pauls.mp4
+Ldn-04-millennium.mp4
+Ldn-05-tate.mp4
+Ldn-06-southbank.mp4
+Ldn-07-london-eye.mp4
+Ldn-08-bigben.mp4

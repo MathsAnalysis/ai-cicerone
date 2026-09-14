@@ -1,0 +1,68 @@
+---
+import Base from '../../layouts/Base.astro';
+import Foot from '../../components/Foot.astro';
+import Logo from '../../components/Logo.astro';
+import { DEST, TOURS } from '../../data/tours';
+import { I18N, fill } from '../../i18n';
+
+export function getStaticPaths() {
+  return Object.keys(DEST).map((dest) => ({ params: { dest } }));
+}
+
+const { dest } = Astro.params;
+const d = DEST[dest!];
+const T = I18N[d.lang];
+const openIds = d.tours.filter((id) => !TOURS[id].soon);
+const open = openIds.map((id) => TOURS[id]);
+const title = d.lang === 'it'
+  ? `Tour a piedi in ${d.pickTitle}: ${open.map((t) => t.city).join(' e ')} — AiCicerone`
+  : `Bespoke walking tours in ${d.pickTitle}: ${open.map((t) => t.name).join(', ')} — AiCicerone`;
+const description = fill(T.seoDestDesc, { dest: d.pickTitle });
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: `${d.pickEyebrow} ${d.pickTitle}`,
+  itemListElement: openIds.map((id, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: TOURS[id].name,
+    url: new URL(`/${dest}/${id}/`, Astro.site),
+  })),
+};
+---
+
+<Base lang={d.lang} title={title} description={description} jsonLd={jsonLd}>
+  <div class="flex items-center px-5 pt-3.5">
+    <a class="pill no-underline" href="/"><span aria-hidden="true">‹</span><span>{T.backDest}</span></a>
+  </div>
+  <Logo claim={T.claim} />
+  <main class="px-6">
+    <hr class="m-0 h-px border-0 bg-line" />
+    <p class="lede mt-[26px]">{T.lede1}<br /><em>{T.lede2}</em></p>
+    <p class="sub mt-3">{T.sub}</p>
+    <p class="eyebrow mt-[30px]">{d.pickEyebrow}</p>
+    <h1 class="mt-0.5 text-[31px] leading-[1.1]">{d.pickTitle}</h1>
+    <nav class="mt-[18px] mb-1 flex flex-col gap-3" aria-label={d.pickEyebrow}>
+      {d.tours.map((id) => {
+        const t = TOURS[id];
+        return t.soon ? (
+          <div class="card card-soon flex-wrap">
+            <span class="card-badge">{t.name[0]}</span>
+            <span class="min-w-0 flex-1"><h3>{t.name}</h3><p>{t.dur}</p></span>
+            <span class="lock">{T.comingSoon}</span>
+            {t.teaser && <p class="mt-[9px] w-full font-serif text-[13.5px] leading-[1.5] text-[#5c6672] italic text-pretty">{t.teaser}</p>}
+            {t.by && <p class="mt-[5px] w-full text-[11.5px] text-[#a0a8b0]">{t.by}</p>}
+          </div>
+        ) : (
+          <a class="card" href={`/${dest}/${id}/`}>
+            <span class="card-badge">{t.name[0]}</span>
+            <span><h3>{t.name}</h3><p>{t.sub || t.dur}</p></span>
+            <span class="ml-auto text-[22px] leading-none text-blu" aria-hidden="true">›</span>
+          </a>
+        );
+      })}
+    </nav>
+  </main>
+  <div class="flex-1"></div>
+  <Foot />
+</Base>

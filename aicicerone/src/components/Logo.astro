@@ -1,0 +1,12 @@
+---
+import { Image } from 'astro:assets';
+import logo from '../assets/logo-aicicerone.png';
+
+interface Props { claim?: string }
+const { claim } = Astro.props;
+---
+
+<header class="px-6 pt-[34px] pb-3 text-center">
+  <Image src={logo} alt="AiCicerone" width={186} densities={[1, 2]} loading="eager" class="mx-auto block h-auto w-[186px] max-w-[60%]" />
+  {claim && <p class="mt-3.5 text-xs tracking-[0.18em] text-mute uppercase">{claim}</p>}
+</header>

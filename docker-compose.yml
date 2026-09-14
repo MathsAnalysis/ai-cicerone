@@ -1,0 +1,20 @@
+# Solo il sito Node dietro nginx sull host (porta locale 4321). Ollama/SearXNG: vedi aicicerone/docker-compose.yml.
+services:
+  app:
+    build: ./aicicerone
+    container_name: aicicerone
+    restart: unless-stopped
+    env_file: ./aicicerone/.env
+    volumes:
+      - /var/www/aicicerone/video:/app/dist/client/video:ro
+    ports:
+      - "127.0.0.1:4321:4321"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4321/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

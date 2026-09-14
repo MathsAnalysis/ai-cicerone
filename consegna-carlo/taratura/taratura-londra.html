@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>AiCicerone — Taratura coordinate UK</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--blu:#2C5F8A;--terra:#B85C38;--beige:#E8E4DE;--ink:#1F2933;--mute:#6B7580;--line:#E8E4DE;--ok:#3B7A57}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#fff;color:var(--ink);font-family:'Source Sans 3',system-ui,sans-serif}
+h1,h2,h3,.serif{font-family:Georgia,serif;font-weight:400}
+a{color:var(--blu)}a:hover{color:var(--terra)}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#w{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+@media(min-width:820px){body{background:#F4F2EF}#w{background:#fff;box-shadow:0 0 0 1px rgba(31,41,51,.06)}}
+.hd{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.hd .k{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--terra)}
+.hd h1{margin:4px 0 0;font-size:21px}
+.hd p{margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--mute)}
+.seg{display:flex;gap:6px;margin-top:14px}
+.seg button{flex:1;min-height:40px;border-radius:100px;background:var(--beige);font-size:14px;font-weight:600;color:var(--blu)}
+.seg button[aria-pressed=true]{background:var(--blu);color:#fff}
+#map{height:44vh;min-height:260px;background:var(--beige)}
+.bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.bar .nav{width:44px;height:44px;border-radius:50%;background:var(--beige);color:var(--blu);display:grid;place-items:center}
+.bar .nav:disabled{opacity:.35}
+.bar select{flex:1;min-width:0;min-height:44px;padding:0 12px;border:0;border-radius:11px;box-shadow:inset 0 0 0 1px var(--line);font:600 14.5px 'Source Sans 3',sans-serif;color:var(--ink);background:#fff}
+.info{padding:14px 20px 0}
+.info .n{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.info h2{margin:4px 0 0;font-size:20px}
+.coords{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.cbox{padding:11px 13px;border-radius:11px;box-shadow:inset 0 0 0 1px var(--line)}
+.cbox.new{box-shadow:inset 0 0 0 1.5px var(--ok);background:#F5FAF7}
+.cbox .l{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.cbox .v{margin-top:4px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;word-break:break-all}
+.delta{margin-top:10px;font-size:13px;color:var(--mute)}
+.delta b{color:var(--ok)}
+.acts{display:flex;flex-direction:column;gap:9px;padding:16px 20px 0}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:100px;font-size:15px;font-weight:600}
+.btn-p{background:var(--terra);color:#fff}
+.btn-s{background:#fff;color:var(--blu);box-shadow:inset 0 0 0 1.5px var(--blu)}
+.btn-g{background:var(--beige);color:var(--ink)}
+.btn-t{background:#fff;color:var(--mute);box-shadow:inset 0 0 0 1px var(--line)}
+.btn:disabled{opacity:.35}
+.row{display:flex;gap:9px}.row .btn{flex:1}
+.tip{margin:16px 20px 0;padding:12px 14px;border-radius:11px;background:#FAF7F2;box-shadow:inset 0 0 0 1px #EDE4D8;font-size:12.5px;line-height:1.5;color:#7A6A55}
+.foot{padding:22px 20px 26px;text-align:center;font-size:10.5px;line-height:1.6;color:#9AA3AC}
+.foot a{color:#9AA3AC}
+.mk{width:24px;height:24px}
+.mk b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--beige),0 2px 5px rgba(31,41,51,.2);font:600 10.5px/1 'Source Sans 3',sans-serif;color:var(--mute)}
+.mk.moved b{background:var(--ok);color:#fff}
+.mk.cur{width:36px;height:36px}
+.mk.cur b{width:36px;height:36px;background:var(--terra);color:#fff;font-size:13px;box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(184,92,56,.25),0 4px 12px rgba(31,41,51,.25)}
+.veil{position:fixed;inset:0;background:rgba(31,41,51,.42);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:520px;transform:translate(-50%,102%);transition:transform .3s cubic-bezier(.32,.72,0,1);background:#fff;border-radius:20px 20px 0 0;z-index:50;max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(31,41,51,.18)}
+.sheet.on{transform:translate(-50%,0)}
+.sheet header{display:flex;align-items:center;padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.sheet header h3{margin:0;font-size:19px}
+.sheet header .x{margin-left:auto;width:44px;height:44px;margin-right:-8px;border-radius:50%;background:var(--beige);color:var(--mute);display:grid;place-items:center}
+.sheet .body{padding:14px 20px 22px;overflow-y:auto}
+textarea{width:100%;min-height:220px;padding:12px;border:0;border-radius:11px;box-shadow:inset 0 0 0 1px var(--line);font:400 11.5px/1.55 ui-monospace,Menlo,monospace;color:var(--ink);resize:vertical;outline:none}
+.snack{position:fixed;left:50%;bottom:22px;transform:translate(-50%,150%);opacity:0;visibility:hidden;z-index:90;background:var(--ink);color:#fff;padding:12px 20px;border-radius:100px;font-size:13.5px;font-weight:600;transition:.28s}
+.snack.on{transform:translate(-50%,0);opacity:1;visibility:visible}
+</style>
+</head>
+<body>
+<div id="w">
+  <div class="hd">
+    <div class="k">Strumento interno</div>
+    <h1>Taratura coordinate — Londra</h1>
+    <p>Sposta i punti delle tappe sulla mappa, poi esporta il codice da incollare in <code>tours-uk.js</code>. Le modifiche restano salvate su questo dispositivo.</p>
+    <div class="seg" id="seg"></div>
+  </div>
+  <div id="map"></div>
+  <div class="bar">
+    <button class="nav" id="prev" aria-label="Tappa precedente"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+    <select id="sel"></select>
+    <button class="nav" id="next" aria-label="Tappa successiva"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+  </div>
+  <div class="info">
+    <div class="n" id="iN"></div>
+    <h2 id="iT"></h2>
+    <div class="coords">
+      <div class="cbox"><div class="l">Originale</div><div class="v" id="cOld"></div></div>
+      <div class="cbox" id="boxNew"><div class="l">Nuova</div><div class="v" id="cNew"></div></div>
+    </div>
+    <div class="delta" id="delta"></div>
+  </div>
+  <div class="acts">
+    <button class="btn btn-p" id="here">Usa la mia posizione GPS</button>
+    <div class="row"><button class="btn btn-g" id="center">Centra sul punto</button><button class="btn btn-t" id="undo">Annulla modifica</button></div>
+    <button class="btn btn-s" id="exp">Esporta per tours.js</button>
+  </div>
+  <div class="tip">Sulla mappa: <b>trascina</b> il pallino arancione, oppure <b>tocca</b> un punto qualsiasi per spostarci la tappa selezionata. In loco conviene il pulsante GPS, stando esattamente dove vuoi il waypoint.</div>
+  <div style="flex:1"></div>
+  <p class="foot">©2026 AiCicerone Ltd. — London, UK — Patent Pending — Strumento interno<br><a href="mailto:info@aicicerone.com">info@aicicerone.com</a></p>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet">
+  <header><h3>Codice per tours-uk.js</h3><button class="x" onclick="closeSheet()">✕</button></header>
+  <div class="body">
+    <p style="margin:0 0 12px;font-size:13px;line-height:1.55;color:var(--mute)">Incolla questo blocco alla <b>fine di tours.js</b>: sovrascrive le coordinate senza toccare il resto del file. Nessun'altra modifica necessaria.</p>
+    <textarea id="out" readonly></textarea>
+    <div class="row" style="margin-top:12px"><button class="btn btn-p" id="copy">Copia</button><button class="btn btn-g" id="dl">Scarica .js</button></div>
+    <button class="btn btn-t" id="wipe" style="margin-top:9px">Azzera tutte le modifiche salvate</button>
+  </div>
+</div>
+<div class="snack" id="snack"></div>
+
+<script src="tours-uk.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='aicicerone-coords-uk-v1';
+const CITIES=Object.keys(TOURS).filter(k=>(TOURS[k].stops||[]).length);
+const M={city:CITIES[0],i:0,map:null,layer:null,edits:JSON.parse(localStorage.getItem(KEY)||'{}')};
+
+function stops(city){const t=TOURS[city];const l=t.stops.map((s,n)=>({...s,num:String(n+1),key:city+':'+(n+1)}));
+ if(t.optional)l.splice(t.optional.after,0,{...t.optional,num:t.optional.label,key:city+':opt'});return l}
+function cur(){return stops(M.city)[M.i]}
+function coordOf(s){return M.edits[s.key]||s.c}
+function snack(t){const e=$('#snack');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2400)}
+function save(){localStorage.setItem(KEY,JSON.stringify(M.edits))}
+function dist(a,b,c,d){const R=6371e3,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180,m=Math.cos(a*Math.PI/180);return Math.round(R*Math.sqrt(x*x+y*m*y*m))}
+
+$('#seg').innerHTML=CITIES.map(k=>`<button data-c="${k}" aria-pressed="${k===M.city}">${TOURS[k].name}</button>`).join('');
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{M.city=b.dataset.c;M.i=0;
+ document.querySelectorAll('#seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));initMap();render()});
+
+function initMap(){if(M.map)M.map.remove();
+ M.map=L.map('map',{zoomControl:false}).setView(TOURS[M.city].center,15);
+ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri, HERE, Garmin, © OpenStreetMap contributors'}).addTo(M.map);
+ L.control.zoom({position:'bottomright'}).addTo(M.map);
+ M.layer=L.layerGroup().addTo(M.map);
+ M.map.on('click',e=>setCoord(e.latlng.lat,e.latlng.lng));}
+
+function draw(){M.layer.clearLayers();const l=stops(M.city);
+ L.polyline(l.map(coordOf),{color:'#C9C2B8',weight:2,dashArray:'2 6'}).addTo(M.layer);
+ l.forEach((s,n)=>{const isCur=n===M.i,moved=!!M.edits[s.key];
+  const mk=L.marker(coordOf(s),{draggable:isCur,zIndexOffset:isCur?1000:0,
+   icon:L.divIcon({className:'',iconSize:[isCur?36:24,isCur?36:24],iconAnchor:[isCur?18:12,isCur?18:12],
+    html:`<div class="mk${isCur?' cur':''}${moved?' moved':''}"><b>${s.num}</b></div>`})}).addTo(M.layer);
+  if(isCur)mk.on('dragend',e=>{const p=e.target.getLatLng();setCoord(p.lat,p.lng)});
+  else mk.on('click',ev=>{ev.originalEvent.stopPropagation();M.i=n;render()})})}
+
+function render(){const l=stops(M.city),s=cur(),c=coordOf(s),moved=!!M.edits[s.key];
+ $('#sel').innerHTML=l.map((x,n)=>`<option value="${n}"${n===M.i?' selected':''}>${x.num} · ${x.t}${M.edits[x.key]?' ✎':''}</option>`).join('');
+ $('#iN').textContent=`Tappa ${s.num} · ${TOURS[M.city].name}`;$('#iT').textContent=s.t;
+ $('#cOld').textContent=s.c[0].toFixed(5)+', '+s.c[1].toFixed(5);
+ $('#cNew').textContent=moved?c[0].toFixed(5)+', '+c[1].toFixed(5):'—';
+ $('#boxNew').classList.toggle('new',moved);
+ $('#delta').innerHTML=moved?`Spostata di <b>${dist(s.c[0],s.c[1],c[0],c[1])} m</b> dall'originale.`:'Nessuna modifica su questa tappa.';
+ $('#undo').disabled=!moved;$('#prev').disabled=M.i===0;$('#next').disabled=M.i===l.length-1;
+ draw();M.map.panTo(c,{animate:true});}
+
+function setCoord(lat,lng){const s=cur();M.edits[s.key]=[+lat.toFixed(5),+lng.toFixed(5)];save();render();snack('Coordinata aggiornata')}
+$('#sel').onchange=e=>{M.i=+e.target.value;render()};
+$('#prev').onclick=()=>{if(M.i>0){M.i--;render()}};
+$('#next').onclick=()=>{if(M.i<stops(M.city).length-1){M.i++;render()}};
+$('#center').onclick=()=>M.map.setView(coordOf(cur()),18,{animate:true});
+$('#undo').onclick=()=>{delete M.edits[cur().key];save();render();snack('Modifica annullata')};
+$('#here').onclick=()=>{if(!navigator.geolocation)return snack('GPS non disponibile');
+ snack('Cerco la posizione…');navigator.geolocation.getCurrentPosition(
+  p=>{setCoord(p.coords.latitude,p.coords.longitude);snack(`Presa dal GPS (±${Math.round(p.coords.accuracy)} m)`)},
+  ()=>snack('Posizione non ottenuta'),{enableHighAccuracy:true,timeout:12000});};
+
+function build(){const o={};CITIES.forEach(city=>{const l=stops(city);
+ const arr=l.filter(s=>s.num!==(TOURS[city].optional||{}).label).map(s=>coordOf(s));
+ o[city]=arr;const opt=l.find(s=>s.key===city+':opt');if(opt)o[city+'_opt']=coordOf(opt)});
+ const n=Object.keys(M.edits).length;
+ let t=`/* Coordinate tarate sul campo — generato ${new Date().toLocaleDateString('it-IT')} — ${n} tappe modificate.\n   Incollare alla fine di tours-uk.js. */\nconst COORDS={\n`;
+ Object.keys(o).forEach(k=>{const v=o[k];
+  t+=` ${k}:`+(Array.isArray(v[0])?`[\n  ${v.map(c=>`[${c[0]},${c[1]}]`).join(',\n  ')}\n ]`:`[${v[0]},${v[1]}]`)+`,\n`});
+ t+=`};\nObject.keys(COORDS).forEach(c=>{\n if(COORDS[c])TOURS[c].stops.forEach((s,i)=>{if(COORDS[c][i])s.c=COORDS[c][i]});\n if(COORDS[c+'_opt']&&TOURS[c].optional)TOURS[c].optional.c=COORDS[c+'_opt'];\n});\n`;
+ return t}
+$('#exp').onclick=()=>{$('#out').value=build();$('#veil').classList.add('on');$('#sheet').classList.add('on')};
+function closeSheet(){$('#veil').classList.remove('on');$('#sheet').classList.remove('on')}
+$('#veil').onclick=closeSheet;
+$('#copy').onclick=async()=>{const t=$('#out');try{await navigator.clipboard.writeText(t.value);snack('Copiato')}catch(e){t.select();document.execCommand('copy');snack('Copiato')}};
+$('#dl').onclick=()=>{const b=new Blob([build()],{type:'text/javascript'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download='coordinate-tarate.js';a.click();URL.revokeObjectURL(a.href)};
+$('#wipe').onclick=()=>{if(confirm('Azzerare tutte le coordinate modificate?')){M.edits={};save();closeSheet();render();snack('Modifiche azzerate')}};
+
+initMap();render();
+</script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#E8E4DE"/><circle cx="100" cy="92" r="34" fill="none" stroke="#2C5F8A" stroke-width="6"/><path d="M100 46v-14M100 152v-14M46 92H32M168 92h-14" stroke="#2C5F8A" stroke-width="6" stroke-linecap="round"/><circle cx="100" cy="92" r="9" fill="#B85C38"/><text x="100" y="182" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#B85C38">Taratura</text></svg></template>
+</body>
+</html>

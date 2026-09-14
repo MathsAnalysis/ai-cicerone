@@ -1,0 +1,6 @@
+# HTTPS automatico (Let's Encrypt) sul dominio in DOMAIN; con "localhost" usa un certificato locale.
+# Il GPS del browser funziona solo su HTTPS.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:4321
+}

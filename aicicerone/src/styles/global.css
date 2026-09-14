@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+@import "@fontsource-variable/source-sans-3";
+
+/* Palette AiCicerone: bianco, blu, terra, beige. Mai navy + oro. */
+@theme {
+  --color-blu: #2c5f8a;
+  --color-blu-deep: #24507a;
+  --color-blu-tint: #f5f8fb;
+  --color-terra: #b85c38;
+  --color-terra-deep: #a2502f;
+  --color-terra-tint: #fdf9f7;
+  --color-beige: #e8e4de;
+  --color-beige-deep: #ded8d0;
+  --color-ink: #1f2933;
+  --color-mute: #6b7580;
+  --color-line: #e8e4de;
+  --color-sand: #faf7f2;
+  --color-night: #0e1418;
+  --color-night-deep: #0a0f13;
+  --font-sans: "Source Sans 3 Variable", system-ui, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --radius-card: 14px;
+  --animate-pulse-dot: pulse-dot 1.6s infinite;
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: #fff; color: var(--color-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  @media (min-width: 800px) { body { background: #f4f2ef; } }
+  h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.01em; }
+  a { color: var(--color-blu); }
+  a:hover { color: var(--color-terra); }
+  * { -webkit-tap-highlight-color: transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  /* Pulsanti — sistema unico per pagine Astro e isola Preact (tavola "AiCicerone Buttons" su Claude Design). */
+  .btn { @apply inline-flex w-full min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3.5 text-center text-base font-semibold tracking-[0.01em] transition-colors duration-150 select-none no-underline disabled:pointer-events-none disabled:opacity-35; }
+  .btn-p { @apply bg-terra text-white hover:text-white active:bg-terra-deep; }
+  .btn-s { @apply bg-white text-blu shadow-[inset_0_0_0_1.5px_var(--color-blu)] hover:text-blu active:bg-blu-tint; }
+  .btn-g { @apply bg-beige text-ink hover:text-ink active:bg-beige-deep; }
+  .btn-t { @apply bg-white text-mute shadow-[inset_0_0_0_1px_var(--color-line)] active:bg-sand; }
+  .btn-sm { @apply min-h-[46px] text-sm; }
+  .btn-nav { @apply h-[52px] w-[52px] flex-none rounded-full bg-beige p-0 text-blu shadow-[inset_0_0_0_1px_#dad3c9] active:bg-beige-deep; }
+  .btn-link { @apply inline-flex min-h-[46px] flex-1 cursor-pointer items-center justify-center rounded-full bg-beige px-2.5 py-3 text-[13.5px] font-semibold text-blu active:bg-beige-deep; }
+  .btn-chip { @apply cursor-pointer rounded-full px-[13px] py-2 text-[13px] font-semibold text-blu shadow-[inset_0_0_0_1px_var(--color-line)] active:bg-sand; }
+  .btn-gps { @apply ml-auto inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full bg-beige px-[15px] text-[11.5px] font-bold tracking-[0.06em] whitespace-nowrap text-blu uppercase transition-colors; }
+  .btn-gps[aria-pressed="true"] { @apply bg-blu text-white; }
+  .btn-gps .dot { @apply h-[7px] w-[7px] rounded-full bg-current opacity-55; }
+  .btn-gps[aria-pressed="true"] .dot { @apply animate-pulse-dot opacity-100; }
+  .btn-x { @apply -mr-2 ml-auto grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-beige text-[15px] text-mute; }
+  .btn-toast { @apply mt-2.5 cursor-pointer rounded-full bg-terra px-4 py-[9px] text-[13px] font-semibold text-white active:bg-terra-deep; }
+  .btn-send { @apply grid h-11 w-11 flex-none cursor-pointer place-items-center rounded-full bg-terra text-white active:bg-terra-deep; }
+
+  .pill { @apply inline-flex items-center gap-1 rounded-full bg-beige px-[13px] py-[7px] text-xs font-bold tracking-[0.06em] whitespace-nowrap text-blu uppercase; }
+  .eyebrow { @apply text-[11.5px] font-bold tracking-[0.16em] text-terra uppercase; }
+  .lede { @apply text-[27px] leading-[1.22] text-pretty; }
+  .lede em { @apply text-blu italic; }
+  .sub { @apply text-[15.5px] leading-relaxed text-mute text-pretty; }
+
+  .card { @apply flex w-full items-center gap-4 rounded-card bg-white p-4 text-left text-ink no-underline shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors hover:text-ink; }
+  .card h3 { @apply m-0 text-[19px]; }
+  .card p { @apply mt-[3px] text-[13px] leading-[1.4] text-mute; }
+  .card-badge { @apply grid h-[54px] w-[54px] flex-none place-items-center rounded-xl bg-beige font-serif text-[21px] text-blu; }
+  .card[aria-selected="true"] { @apply bg-blu-tint shadow-[inset_0_0_0_2px_var(--color-blu)]; }
+  .card[aria-selected="true"] .card-badge { @apply bg-blu text-white; }
+  .card-soon { @apply bg-[#fcfbfa]; }
+  .card-soon .card-badge { @apply bg-[#f1eeea] text-[#a9b2ba]; }
+  .card-soon h3 { @apply text-[#7c8792]; }
+  .lock { @apply ml-auto flex-none rounded-full bg-beige px-2.5 py-[5px] text-[10px] font-bold tracking-[0.1em] whitespace-nowrap text-[#8a939b] uppercase; }
+
+  .gcard { @apply mb-3 flex w-full cursor-pointer items-start gap-4 rounded-card p-[18px] text-left shadow-[inset_0_0_0_1px_var(--color-line)]; }
+  .gcard[aria-selected="true"] { @apply bg-terra-tint shadow-[inset_0_0_0_2px_var(--color-terra)]; }
+  .gcard h3 { @apply m-0 text-[19px]; }
+  .gcard .role { @apply mt-0.5 text-xs font-bold tracking-[0.08em] text-terra uppercase; }
+  .gcard .bio { @apply mt-[7px] text-[13.5px] leading-normal text-mute; }
+  .gportrait { @apply grid h-16 w-16 flex-none place-items-center overflow-hidden rounded-full bg-beige font-serif text-2xl text-blu; }
+  .gcard-soon { @apply cursor-default bg-[#fcfbfa]; }
+  .gcard-soon .gportrait { @apply bg-[#f1eeea] text-[#a9b2ba]; }
+  .gcard-soon h3 { @apply text-[#7c8792]; }
+  .gcard-soon .role { @apply text-[#a9a29c]; }
+
+  .foot { @apply px-6 pt-[22px] pb-[26px] text-center text-[10.5px] leading-[1.5] tracking-[0.02em] text-[#9aa3ac]; }
+  .foot a { @apply border-b border-[#dfe3e7] text-[#9aa3ac] no-underline hover:text-terra; }
+
+  .notice { @apply mx-5 mt-3 flex gap-2.5 rounded-xl bg-sand px-[15px] py-[13px] text-[13px] leading-[1.5] text-[#7a6a55] shadow-[inset_0_0_0_1px_#ede4d8]; }
+
+  .field { @apply mb-[15px]; }
+  .field label { @apply mb-[7px] block text-xs font-bold tracking-[0.09em] text-mute uppercase; }
+  .field select, .field textarea { @apply w-full rounded-[11px] border-0 bg-white px-3.5 py-3 text-[14.5px] text-ink shadow-[inset_0_0_0_1px_var(--color-line)] outline-none focus:shadow-[inset_0_0_0_1.5px_var(--color-blu)]; }
+  .field textarea { @apply resize-y; }
+
+  .tog { @apply relative ml-auto h-[26px] w-11 flex-none cursor-pointer rounded-full bg-beige transition-colors; }
+  .tog::after { content: ""; @apply absolute top-[3px] left-[3px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-transform; }
+  .tog[aria-pressed="true"] { @apply bg-blu; }
+  .tog[aria-pressed="true"]::after { transform: translateX(18px); }
+
+  .msg { @apply max-w-[82%] rounded-2xl px-3.5 py-[11px] text-[14.5px] leading-[1.5] whitespace-pre-line; }
+  .msg-g { @apply self-start rounded-bl-[5px] bg-beige; }
+  .msg-u { @apply self-end rounded-br-[5px] bg-blu text-white; }
+
+  /* Fogli dal basso */
+  .veil { @apply pointer-events-none fixed inset-y-0 left-1/2 z-40 w-full max-w-[440px] -translate-x-1/2 bg-[rgba(31,41,51,0.42)] opacity-0 transition-opacity duration-200; }
+  .veil[data-on="true"] { @apply pointer-events-auto opacity-100; }
+  .sheet { @apply fixed bottom-0 left-1/2 z-50 flex max-h-[88dvh] w-full max-w-[440px] flex-col rounded-t-[20px] bg-white shadow-[0_-8px_40px_rgba(31,41,51,0.18)]; transform: translate(-50%, 102%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+  .sheet[data-on="true"] { transform: translate(-50%, 0); }
+
+  /* Notifica di arrivo */
+  .toast { @apply fixed top-3.5 left-1/2 z-[80] flex w-[calc(100%-28px)] max-w-[412px] items-start gap-[13px] rounded-2xl bg-white px-[17px] py-[15px] shadow-[0_12px_40px_rgba(31,41,51,0.22)]; transform: translate(-50%, -160%); transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1); }
+  .toast[data-on="true"] { transform: translate(-50%, 0); }
+  .snack { @apply invisible fixed bottom-[22px] left-1/2 z-[90] max-w-[88%] rounded-full bg-ink px-5 py-3 text-[13.5px] font-semibold whitespace-nowrap text-white opacity-0 transition-[transform,opacity,visibility] duration-300; transform: translate(-50%, 150%); }
+  .snack[data-on="true"] { @apply visible opacity-100; transform: translate(-50%, 0); }
+
+  /* Marcatori mappa: HTML generato da Leaflet (divIcon) */
+  .mk { position: relative; width: 26px; height: 26px; }
+  .mk b { position: absolute; inset: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px var(--color-beige), 0 2px 6px rgba(31, 41, 51, 0.18); display: grid; place-items: center; font: 600 11px/1 var(--font-sans); color: var(--color-mute); }
+  .mk.done b { background: var(--color-blu); color: #fff; box-shadow: 0 0 0 1.5px #fff, 0 2px 6px rgba(31, 41, 51, 0.2); }
+  .mk.cur { width: 38px; height: 38px; }
+  .mk.cur b { background: var(--color-terra); color: #fff; font-size: 14px; box-shadow: 0 0 0 3px #fff, 0 0 0 5px rgba(184, 92, 56, 0.25), 0 4px 12px rgba(31, 41, 51, 0.25); }
+  .mk.opt:not(.cur) b { border: 1.5px dashed var(--color-terra); color: var(--color-terra); }
+  .mklabel { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 5px; white-space: nowrap; font: 600 10.5px/1 var(--font-sans); color: var(--color-blu); background: rgba(255, 255, 255, 0.92); padding: 3px 7px; border-radius: 100px; box-shadow: 0 1px 3px rgba(31, 41, 51, 0.12); }
+  .leaflet-container { font-family: var(--font-sans); }
+  .leaflet-control-attribution { font-size: 9px; }
+
+  /* Player video: barra di avanzamento */
+  .vfill::after { content: ""; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: var(--color-terra); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+}

@@ -1,0 +1,12 @@
+node_modules
+dist
+.astro
+.env
+.env.example
+.git
+design
+deploy
+docker-compose.yml
+README.md
+**/*.test.ts
+public/video/*.mp4

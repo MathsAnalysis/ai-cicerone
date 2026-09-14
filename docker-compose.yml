@@ -38,6 +38,9 @@ services:
       OLLAMA_NUM_PARALLEL: 1
       OLLAMA_MAX_LOADED_MODELS: 1
       OLLAMA_LOAD_TIMEOUT: 10m
+      # Stesso contesto per tutte le richieste (retrieve e chat): un num_ctx diverso fa ricaricare
+      # il modello (~8 s) e azzera la cache del prefisso.
+      OLLAMA_CONTEXT_LENGTH: 8192
     volumes:
       - ollama:/root/.ollama
     logging:

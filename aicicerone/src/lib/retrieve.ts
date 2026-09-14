@@ -83,7 +83,7 @@ export async function extractTopic(question: string, lang: Lang): Promise<string
     const r = await fetch(`${env.llmUrl}/api/generate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: env.model, prompt: prompt + (/qwen3/i.test(env.model) ? ' /no_think' : ''), stream: false, keep_alive: '30m', ...(thinks(env.model) ? { think: false } : {}), options: { temperature: 0, num_predict: 24 } }),
+      body: JSON.stringify({ model: env.model, prompt: prompt + (/qwen3/i.test(env.model) ? ' /no_think' : ''), stream: false, keep_alive: -1, ...(thinks(env.model) ? { think: false } : {}), options: { temperature: 0, num_predict: 24, num_ctx: 8192 } }),
       signal: AbortSignal.timeout(8000),
     });
     const j = (await r.json()) as { response?: string };

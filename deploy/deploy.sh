@@ -18,7 +18,7 @@ docker builder prune -f >/dev/null
 
 # Precarica il modello: la prima richiesta reale non paga il caricamento a freddo.
 set -a; . aicicerone/.env; set +a
-docker compose exec -T app node -e "fetch('http://ollama:11434/api/generate',{method:'POST',body:JSON.stringify({model:process.env.CHAT_MODEL||'qwen3:1.7b',prompt:'',keep_alive:-1})}).then(r=>console.log('ollama warm-up',r.status)).catch(e=>console.log('ollama warm-up skipped:',e.message))" || true
+docker compose exec -T app node -e "fetch('http://ollama:11434/api/generate',{method:'POST',body:JSON.stringify({model:process.env.CHAT_MODEL||'qwen3:1.7b',prompt:'',keep_alive:-1,options:{num_ctx:8192}})}).then(r=>console.log('ollama warm-up',r.status)).catch(e=>console.log('ollama warm-up skipped:',e.message))" || true
 
 sudo rm -rf /var/cache/nginx/aicicerone/*
 sudo nginx -t

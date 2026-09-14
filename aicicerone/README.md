@@ -11,7 +11,7 @@ Riscrittura della demo `consegna-carlo/` (HTML/JS vanilla) in **Astro 7 + TypeSc
 ## Requisiti
 
 - Node 22+ (sviluppo con Node 26).
-- [Ollama](https://ollama.com) per l'IA locale: `ollama pull qwen3:8b` (≈5 GB; alternativa leggera `gemma3:4b`, più accurata `qwen3:14b` o `gemma3:12b`).
+- [Ollama](https://ollama.com) per l'IA locale. Modello di default **`qwen3:1.7b`**: molto leggero (≈1,4 GB su disco, ≈2 GB di RAM, risponde in pochi secondi anche su CPU); le risposte restano corrette perché il modello riassume le fonti recuperate da internet, non la sua memoria. Più accurato `qwen3:4b` (4 GB RAM), migliore `qwen3:8b` (8 GB). Si cambia con `CHAT_MODEL`.
 - Un server SMTP per le email (hosting, Outlook, Gmail con app password, Resend SMTP…).
 - Facoltativo: [SearXNG](https://docs.searxng.org) per la ricerca web generale (senza, l'IA usa solo Wikipedia).
 
@@ -21,7 +21,7 @@ Riscrittura della demo `consegna-carlo/` (HTML/JS vanilla) in **Astro 7 + TypeSc
 cd aicicerone
 npm install
 cp .env.example .env      # impostare CHAT_MODEL, SMTP_URL, REPORT_FROM
-ollama pull qwen3:8b
+ollama pull qwen3:1.7b
 npm run dev               # http://localhost:4321
 ```
 
@@ -41,16 +41,18 @@ Test delle regole di arrivo GPS: `npm test`. Build di produzione: `npm run build
 | `REPORT_TO` | Destinatari, separati da virgola | `carlo4340@outlook.it,mario@aicicerone.com` |
 | `HOST`, `PORT` | Bind del server Node | `0.0.0.0`, `4321` |
 
-## Deploy su server proprio (Docker)
+## Deploy
 
-`docker-compose.yml` avvia tutto su una macchina: sito (Node), Ollama, SearXNG e Caddy (HTTPS automatico).
+**VPS (in uso)**: il `docker-compose.yml` nella cartella radice del repo avvia sito, Ollama (CPU) e SearXNG dietro nginx sull'host; `deploy/deploy.sh` è lanciato da GitHub Actions a ogni push su `main` e scarica in background il modello indicato da `CHAT_MODEL` in `aicicerone/.env` (sulla VPS quel file va creato a mano: almeno `CHAT_MODEL`, `SMTP_URL`, `REPORT_FROM`). RAM necessaria sulla VPS: ~2 GB per `qwen3:1.7b`, ~4 GB per `qwen3:4b`.
+
+**Server autonomo con HTTPS**: `aicicerone/docker-compose.yml` avvia tutto su una macchina, Caddy compreso (certificati automatici).
 
 ```bash
 cp .env.example .env         # DOMAIN=tour.aicicerone.com, SMTP_URL=…, CHAT_MODEL=…
 docker compose up -d --build # il servizio ollama-pull scarica il modello al primo avvio
 ```
 
-Hardware: `qwen3:8b` gira su CPU con 8 GB di RAM liberi (lento) o su una GPU da 6 GB (fluido). Per NVIDIA scommentare il blocco `deploy` del servizio `ollama`. Su Mac Apple Silicon conviene Ollama nativo (`brew install ollama`) e `LLM_URL=http://host.docker.internal:11434`.
+Per NVIDIA scommentare il blocco `deploy` del servizio `ollama`. Su Mac Apple Silicon conviene Ollama nativo (`brew install ollama`) e `LLM_URL=http://host.docker.internal:11434`.
 
 ## Come funziona il GPS
 
@@ -69,11 +71,13 @@ Mappa: **MapLibre GL JS** (open source, resa vettoriale, nessun token) su tile *
 `POST /api/chat/` (`src/pages/api/chat.ts`):
 
 1. Valida la richiesta (tour, guida, tappa, storico ≤ 12 turni); accetta solo richieste dallo stesso host; 30 richieste/min per IP.
-2. **Recupera fonti da internet** per la domanda (`src/lib/retrieve.ts`): Wikipedia nella lingua del tour (3 voci, estratti) + SearXNG (4 risultati) se configurato, in parallelo, timeout 4 s.
+2. **Recupera fonti da internet** per la domanda (`src/lib/retrieve.ts`): Wikipedia nella lingua del tour (fino a 8 voci, estratti) + SearXNG (4 risultati) se configurato, in parallelo, timeout 4 s.
 3. Costruisce il system prompt (`src/lib/prompt.ts`): persona della guida, regole (brevità, niente invenzioni, cita la fonte), testi del tour come fonte primaria, stato del tour, fonti web.
 4. Chiama Ollama in streaming (`think: false` per i modelli con ragionamento) e inoltra al client righe NDJSON `{sources}`, `{t}`, `{done}`. Sotto la risposta compaiono i link alle fonti usate.
 
-Se Ollama non risponde, la chat mostra una risposta dimostrativa e lo segnala («Guida non collegata»). Il modello è intercambiabile (`CHAT_MODEL`): qualsiasi modello servito da Ollama.
+Prima della ricerca il modello estrae l'argomento della domanda («cos'è la statua di Bellini?» → «statua Bellini»), così Wikipedia trova la voce giusta; le fonti vengono allegate al messaggio dell'utente subito prima della domanda, con temperatura bassa: i modelli piccoli così restano ancorati ai testi invece di inventare.
+
+Se Ollama non risponde, la chat mostra una risposta dimostrativa e lo segnala («Guida non collegata»). Il modello è intercambiabile (`CHAT_MODEL`): qualsiasi modello servito da Ollama. Provati (Ollama 0.34): `qwen3:1.7b` risposte in 2–4 s, corrette e ancorate alle fonti, prosa a tratti goffa; `qwen3:8b` più fluido; `qwen3:4b` da evitare, con questa versione di Ollama fa trapelare il ragionamento nella risposta.
 
 ## Segnalazioni
 

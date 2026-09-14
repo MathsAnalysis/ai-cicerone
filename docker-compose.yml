@@ -64,7 +64,8 @@ services:
     container_name: aicicerone-searxng
     restart: unless-stopped
     volumes:
-      - ./aicicerone/deploy/searxng:/etc/searxng:rw
+      # solo lettura: il container faceva chown della cartella e git reset falliva al deploy
+      - ./aicicerone/deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro
     environment:
       SEARXNG_BASE_URL: "http://searxng:8080/"
       SEARXNG_SECRET: "${SEARXNG_SECRET:-cambiami-con-una-stringa-casuale}"

@@ -1,5 +1,5 @@
 import type { Lang } from '../data/tours';
-import { env } from './api.ts';
+import { env, thinks } from './api.ts';
 
 // Recupero di fonti da internet per fondare la risposta del modello locale:
 // Wikipedia (sempre, nella lingua del tour) + SearXNG self-hosted (se configurato).
@@ -9,25 +9,39 @@ export type Source = { title: string; url: string; text: string };
 
 const UA = 'AiCicerone/1.0 (tour guide app; info@aicicerone.com)';
 const TIMEOUT = 4000;
-const MAX_CHARS = 700;
+const MAX_CHARS = 900;
+const SHORT_INTRO = 300; // sotto questa lunghezza l'incipit non basta: si scarica un estratto più lungo
 
 function clean(s: string): string {
   return s.replace(/\s+/g, ' ').trim().slice(0, MAX_CHARS);
 }
 
+// Estratto dall'inizio della voce (non solo l'incipit): per voci con introduzione di una riga.
+async function longer(title: string, lang: Lang): Promise<string> {
+  const u = new URL(`https://${lang}.wikipedia.org/w/api.php`);
+  u.search = new URLSearchParams({ action: 'query', prop: 'extracts', titles: title, exchars: '1200', explaintext: '1', format: 'json' }).toString();
+  const r = await fetch(u, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(TIMEOUT) });
+  if (!r.ok) return '';
+  const j = (await r.json()) as { query?: { pages?: Record<string, { extract?: string }> } };
+  return Object.values(j.query?.pages ?? {})[0]?.extract ?? '';
+}
+
 async function wikipedia(q: string, lang: Lang): Promise<Source[]> {
   const u = new URL(`https://${lang}.wikipedia.org/w/api.php`);
   u.search = new URLSearchParams({
-    action: 'query', generator: 'search', gsrsearch: q, gsrlimit: '5', gsrnamespace: '0',
-    prop: 'extracts|info', exintro: '1', explaintext: '1', exlimit: '5', inprop: 'url', format: 'json',
+    action: 'query', generator: 'search', gsrsearch: q, gsrlimit: '8', gsrnamespace: '0',
+    prop: 'extracts|info', exintro: '1', explaintext: '1', exlimit: '8', inprop: 'url', format: 'json',
   }).toString();
   const r = await fetch(u, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(TIMEOUT) });
   if (!r.ok) return [];
   const j = (await r.json()) as { query?: { pages?: Record<string, { title: string; extract?: string; fullurl?: string; index?: number }> } };
-  const pages = Object.values(j.query?.pages ?? {}).sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
-  return pages
-    .filter((p) => p.extract && p.fullurl)
-    .map((p) => ({ title: `Wikipedia · ${p.title}`, url: p.fullurl!, text: clean(p.extract!) }));
+  const pages = Object.values(j.query?.pages ?? {}).filter((p) => p.fullurl).sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  const enriched = await Promise.all(pages.map(async (p, i) => {
+    let text = p.extract ?? '';
+    if (i < 4 && text.length < SHORT_INTRO) text = (await longer(p.title, lang).catch(() => '')) || text;
+    return text ? { title: `Wikipedia · ${p.title}`, url: p.fullurl!, text: clean(text) } : null;
+  }));
+  return enriched.filter((x): x is Source => x !== null);
 }
 
 async function searxng(q: string, lang: Lang): Promise<Source[]> {
@@ -59,9 +73,33 @@ export function searchQuery(question: string, lang: Lang, city: string): string 
   return (base.includes(city.toLowerCase()) ? base : `${base} ${city}`).slice(0, 200);
 }
 
+// Il modello estrae il soggetto della domanda («cos'è la statua di Bellini?» → «statua di Bellini»):
+// una ricerca mirata trova la voce giusta molto più spesso della domanda grezza.
+export async function extractTopic(question: string, lang: Lang): Promise<string> {
+  const prompt = lang === 'it'
+    ? `Domanda di un visitatore: «${question}»\nScrivi solo il nome del luogo, monumento, opera, persona o argomento a cui si riferisce, in 1-5 parole, senza spiegazioni. Se non c'è un soggetto preciso scrivi: nessuno.`
+    : `Visitor question: "${question}"\nWrite only the name of the place, monument, work, person or topic it refers to, in 1-5 words, no explanation. If there is no precise subject write: none.`;
+  try {
+    const r = await fetch(`${env.llmUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ model: env.model, prompt: prompt + (/qwen3/i.test(env.model) ? ' /no_think' : ''), stream: false, keep_alive: '30m', ...(thinks(env.model) ? { think: false } : {}), options: { temperature: 0, num_predict: 24 } }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const j = (await r.json()) as { response?: string };
+    const t = String(j.response ?? '').split('\n')[0].replace(/["«»*.:]/g, '').trim();
+    return !t || t.length > 60 || /^(nessuno|none)\b/i.test(t) ? '' : t;
+  } catch {
+    return '';
+  }
+}
+
 export async function retrieve(question: string, lang: Lang, city: string): Promise<Source[]> {
-  const q = searchQuery(question, lang, city);
-  const settled = await Promise.allSettled([wikipedia(q, lang), searxng(q, lang)]);
+  const topic = await extractTopic(question, lang);
+  const qTopic = topic ? searchQuery(topic, lang, city) : '';
+  const qWords = searchQuery(question, lang, city);
+  const tasks = [qTopic ? wikipedia(qTopic, lang) : Promise.resolve([]), wikipedia(qWords, lang), searxng(qTopic || qWords, lang)];
+  const settled = await Promise.allSettled(tasks);
   const out: Source[] = [];
   const seen = new Set<string>();
   for (const s of settled) {
@@ -72,5 +110,5 @@ export async function retrieve(question: string, lang: Lang, city: string): Prom
       out.push(src);
     }
   }
-  return out.slice(0, 8);
+  return out.slice(0, 10);
 }

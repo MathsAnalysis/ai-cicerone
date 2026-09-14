@@ -2,8 +2,8 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { DEST, TOURS } from '../../data/tours';
-import { clientIp, env, json, limited, readJson, sameOrigin, str } from '../../lib/api';
-import { systemPrompt } from '../../lib/prompt';
+import { clientIp, env, json, limited, readJson, sameOrigin, str, thinks } from '../../lib/api';
+import { systemPrompt, userTurn } from '../../lib/prompt';
 import { retrieve } from '../../lib/retrieve';
 
 const MAX_MESSAGES = 12;
@@ -26,9 +26,6 @@ function parseMessages(v: unknown): Msg[] | null {
   return out[0].role === 'user' && out[out.length - 1].role === 'user' ? out : null;
 }
 
-// Modelli con "ragionamento" esplicito: lo spegniamo, serve una risposta rapida in strada.
-const thinks = (model: string) => /qwen3|deepseek-r1|gpt-oss|magistral/i.test(model);
-
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!sameOrigin(request)) return json(403, { error: 'forbidden' });
   if (limited('chat', clientIp(request, clientAddress), 30)) return json(429, { error: 'rate_limited' });
@@ -48,9 +45,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   const seen = Array.isArray(body.seen) ? body.seen.filter((s): s is string => typeof s === 'string' && s.length <= 4).slice(0, 40) : [];
 
-  const sources = await retrieve(messages[messages.length - 1].content, dest.lang, tour.city);
-  const system = systemPrompt(dest.lang, tour, guide, stop, seen, sources);
+  const question = messages[messages.length - 1].content;
+  const sources = await retrieve(question, dest.lang, tour.city);
+  const system = systemPrompt(dest.lang, tour, guide, stop, seen);
   const model = env.model;
+  // Qwen3 ibrido: oltre a think:false, l'interruttore nel testo evita che il ragionamento finisca nella risposta.
+  const noThink = /qwen3/i.test(model) ? ' /no_think' : '';
+  const outgoing = [...messages.slice(0, -1), { role: 'user' as const, content: userTurn(dest.lang, question, sources) + noThink }];
 
   let upstream: Response;
   try {
@@ -63,8 +64,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         keep_alive: '30m',
         ...(thinks(model) ? { think: false } : {}),
         // num_ctx esplicito: il default di Ollama (4096) troncherebbe il system prompt con i testi del tour.
-        options: { temperature: 0.4, num_predict: 400, num_ctx: 8192 },
-        messages: [{ role: 'system', content: system }, ...messages],
+        options: { temperature: 0.2, num_predict: 400, num_ctx: 8192 },
+        messages: [{ role: 'system', content: system }, ...outgoing],
       }),
       signal: AbortSignal.timeout(90_000),
     });
@@ -81,7 +82,27 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   let buf = '';
+  let thinking = false; // alcuni modelli emettono comunque <think>…</think>: non va mostrato
   const line = (o: unknown) => enc.encode(JSON.stringify(o) + '\n');
+  const visible = (t: string): string => {
+    let out = '';
+    let rest = t;
+    while (rest) {
+      if (thinking) {
+        const end = rest.indexOf('</think>');
+        if (end < 0) return out;
+        thinking = false;
+        rest = rest.slice(end + 8);
+      } else {
+        const start = rest.indexOf('<think>');
+        if (start < 0) { out += rest; break; }
+        out += rest.slice(0, start);
+        thinking = true;
+        rest = rest.slice(start + 7);
+      }
+    }
+    return out;
+  };
   const out = new TransformStream<Uint8Array, Uint8Array>({
     start(ctrl) {
       ctrl.enqueue(line({ sources: sources.map((s) => ({ title: s.title, url: s.url })) }));
@@ -95,7 +116,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         try {
           const j = JSON.parse(l);
           if (j.error) ctrl.enqueue(line({ error: String(j.error) }));
-          const t = j.message?.content;
+          const t = j.message?.content ? visible(String(j.message.content)) : '';
           if (t) ctrl.enqueue(line({ t }));
         } catch {
           // riga incompleta o non JSON: ignorata

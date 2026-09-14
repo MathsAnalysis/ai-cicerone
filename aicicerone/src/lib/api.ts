@@ -5,12 +5,15 @@
 const read = (k: string): string => process.env[k] ?? (import.meta as { env?: Record<string, string | undefined> }).env?.[k] ?? '';
 export const env = {
   get llmUrl() { return (read('LLM_URL') || 'http://localhost:11434').replace(/\/$/, ''); },
-  get model() { return read('CHAT_MODEL') || 'qwen3:8b'; },
+  get model() { return read('CHAT_MODEL') || 'qwen3:1.7b'; },
   get searxng() { return read('SEARXNG_URL').replace(/\/$/, ''); },
   get smtpUrl() { return read('SMTP_URL'); },
   get reportFrom() { return read('REPORT_FROM') || 'AiCicerone <no-reply@aicicerone.com>'; },
   get reportTo() { return read('REPORT_TO').split(',').map((s) => s.trim()).filter(Boolean); },
 };
+
+// Modelli con "ragionamento" esplicito: lo spegniamo, serve una risposta rapida in strada.
+export const thinks = (model: string): boolean => /qwen3|deepseek-r1|gpt-oss|magistral/i.test(model);
 
 export function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

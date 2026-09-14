@@ -9,7 +9,10 @@ git fetch --prune origin
 git reset --hard origin/main
 
 docker compose build --no-cache --pull app
+docker compose up -d ollama searxng
 docker compose up -d --force-recreate app
+# Modello IA: scaricato o aggiornato in background, il sito parte subito.
+docker compose up -d ollama-pull
 docker image prune -f >/dev/null
 
 sudo rm -rf /var/cache/nginx/aicicerone/*

@@ -62,7 +62,7 @@ Hardware: `qwen3:8b` gira su CPU con 8 GB di RAM liberi (lento) o su una GPU da 
 - Simulazione demo (per l'ufficio): parte solo se il GPS non produce un fix utile — permesso negato, nessun segnale, HTTPS assente, oppure utente **a più di 1 km da tutte le tappe**. Sul posto, con segnale, gli arrivi sono reali. Il pulsante «Incontra la tua guida» resta sempre disponibile.
 - Limite del web: niente geofencing in background né notifiche di sistema → per il prodotto finale serve l'app nativa/Capacitor (vedi `consegna-carlo/NOTE-IMPLEMENTAZIONE.md` §6).
 
-Mappa: Leaflet su tile Esri «World Light Gray» (gratuiti, senza chiave, non contrattualizzati) e OSRM pubblico per i percorsi. Nessun servizio Google. In produzione: tile da provider con contratto o self-hosted (es. OpenFreeMap + MapLibre), percorsi precalcolati in build.
+Mappa: **MapLibre GL JS** (open source, resa vettoriale, nessun token) su tile **OpenFreeMap** (dati OpenStreetMap, gratuite, senza registrazione, chiave o limiti; stile `liberty` con strade, nomi, punti d'interesse ed edifici a colori, self-hostabile) e **OSRM pubblico** per i percorsi a piedi (una richiesta per tutto il tour). Nessun servizio Google né Mapbox, nessun account. Dove manca WebGL2 (browser desktop con accelerazione grafica spenta) parte in automatico la mappa raster Leaflet su tile stradali Esri, senza chiave. Per l'offline-first: le stesse tile si scaricano come PMTiles per destinazione (OpenFreeMap le pubblica) e OSRM si self-hosta.
 
 ## Come funziona la chat con la guida
 

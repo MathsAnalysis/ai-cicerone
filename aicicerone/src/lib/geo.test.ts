@@ -55,3 +55,9 @@ test('per-stop radius overrides the default', () => {
   assert.equal(wide.arrived, 0);
   assert.equal(tight.arrived, null);
 });
+
+test('default radius: 45 m from the stop counts as arrived (field request: 50 m)', () => {
+  const near: Fix = { lat: AMENANO[0] + 0.0004, lng: AMENANO[1], acc: 15 }; // ~44 m nord
+  const r = checkArrival({ n: 0, count: 1 }, near, [{ c: AMENANO }], new Set());
+  assert.equal(r.arrived, 0);
+});

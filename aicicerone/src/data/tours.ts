@@ -102,6 +102,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "St Paul's Cathedral",
         "p": "St Paul's Churchyard, EC4M",
+        "r": 100,
         "c": [
           51.51371,
           -0.0995
@@ -111,6 +112,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Millennium Bridge",
         "p": "Thames crossing, Bankside",
+        "r": 80,
         "c": [
           51.5095,
           -0.09846
@@ -120,6 +122,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Tate Modern",
         "p": "Bankside, SE1",
+        "r": 90,
         "c": [
           51.50758,
           -0.09938
@@ -129,6 +132,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "South Bank",
         "p": "Book market under Waterloo Bridge",
+        "r": 60,
         "c": [
           51.50711,
           -0.11641
@@ -138,6 +142,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "London Eye",
         "p": "Riverside Building, SE1",
+        "r": 80,
         "c": [
           51.50331,
           -0.11957
@@ -147,6 +152,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Big Ben / Elizabeth Tower",
         "p": "Westminster, SW1A",
+        "r": 100,
         "c": [
           51.50072,
           -0.12462
@@ -192,6 +198,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Piazza Duomo",
         "p": "Cuore barocco, Patrimonio UNESCO",
+        "r": 60,
         "c": [
           37.50259,
           15.0872
@@ -246,6 +253,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Teatro Massimo Bellini",
         "p": "Via Perrotta 12",
+        "r": 80,
         "c": [
           37.50433,
           15.09051
@@ -255,6 +263,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Anfiteatro Romano",
         "p": "Piazza Stesicoro",
+        "r": 60,
         "c": [
           37.50742,
           15.08569
@@ -264,6 +273,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Villa Bellini",
         "p": "Via Etnea",
+        "r": 150,
         "c": [
           37.51078,
           15.08532
@@ -273,6 +283,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Monastero dei Benedettini",
         "p": "Piazza Dante Alighieri 32",
+        "r": 120,
         "c": [
           37.50369,
           15.08051
@@ -291,6 +302,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Via Crociferi",
         "p": "Da Piazza San Francesco",
+        "r": 100,
         "c": [
           37.50409,
           15.08479
@@ -318,6 +330,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Teatro Romano e Odeon",
         "p": "Via Vittorio Emanuele II 266",
+        "r": 70,
         "c": [
           37.5026,
           15.0837
@@ -327,6 +340,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Castello Ursino",
         "p": "Piazza Federico di Svevia",
+        "r": 90,
         "c": [
           37.49921,
           15.08455
@@ -364,6 +378,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Ponte Umbertino",
         "p": "Ingresso a Ortigia",
+        "r": 60,
         "c": [
           37.06475,
           15.29097
@@ -373,6 +388,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Tempio di Apollo",
         "p": "Largo XXV Luglio",
+        "r": 60,
         "c": [
           37.06391,
           15.29272
@@ -391,6 +407,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Piazza Duomo",
         "p": "Duomo di Siracusa",
+        "r": 70,
         "c": [
           37.05963,
           15.29316
@@ -427,6 +444,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Castello Maniace",
         "p": "Punta estrema di Ortigia",
+        "r": 150,
         "c": [
           37.05345,
           15.29543
@@ -436,6 +454,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Teatro Greco",
         "p": "Parco della Neapolis",
+        "r": 100,
         "c": [
           37.07564,
           15.27504
@@ -445,6 +464,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Orecchio di Dionisio",
         "p": "Latomia del Paradiso",
+        "r": 60,
         "c": [
           37.07625,
           15.27563
@@ -454,6 +474,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Ara di Ierone II",
         "p": "Parco della Neapolis",
+        "r": 110,
         "c": [
           37.0745,
           15.27689
@@ -463,6 +484,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Anfiteatro Romano",
         "p": "Parco della Neapolis",
+        "r": 90,
         "c": [
           37.07422,
           15.27859
@@ -472,6 +494,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Museo Paolo Orsi",
         "p": "Viale Teocrito 66",
+        "r": 90,
         "c": [
           37.07586,
           15.28597
@@ -481,6 +504,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "Il luogo dell'assedio",
         "p": "Neapolis — morte di Archimede",
+        "r": 60,
         "c": [
           37.07802,
           15.27971
@@ -492,6 +516,7 @@ export const TOURS: Record<string, Tour> = {
       "after": 8,
       "t": "Santuario di Santa Lucia al Sepolcro",
       "p": "Borgata — lungo il tragitto verso la Neapolis",
+      "r": 60,
       "c": [
         37.07298,
         15.29137

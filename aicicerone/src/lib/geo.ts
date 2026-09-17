@@ -7,7 +7,7 @@ export type Fix = { lat: number; lng: number; acc: number };
 export type Arrival = { n: number; count: number } | null;
 
 export const GEO = {
-  radius: 40, // m — raggio di default di ogni tappa; per-tappa via campo `r` in data/tours.ts
+  radius: 50, // m — raggio di default di ogni tappa (diametro 100 m, richiesta dal test sul campo); per-tappa via campo `r` in data/tours.ts
   hits: 2, // fix consecutivi dentro il raggio prima di dichiarare l'arrivo
   far: 1000, // m — oltre questa distanza da ogni tappa il GPS è chiaramente "fuori sede": simulazione demo
   simDelay: 7000, // ms — senza fix utile entro questo tempo parte la simulazione demo

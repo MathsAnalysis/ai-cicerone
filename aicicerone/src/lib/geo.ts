@@ -10,7 +10,8 @@ export const GEO = {
   radius: 50, // m — raggio di default di ogni tappa (diametro 100 m, richiesta dal test sul campo); per-tappa via campo `r` in data/tours.ts
   hits: 2, // fix consecutivi dentro il raggio prima di dichiarare l'arrivo
   far: 1000, // m — oltre questa distanza da ogni tappa il GPS è chiaramente "fuori sede": simulazione demo
-  simDelay: 7000, // ms — senza fix utile entro questo tempo parte la simulazione demo
+  simWait: 15000, // ms — senza alcun fix entro questo tempo parte la simulazione demo (in città il primo fix può tardare 10 s)
+  simDelay: 7000, // ms — ritmo della simulazione: una tappa "raggiunta" ogni tanto
   reroute: 80, // m — spostamento dell'utente oltre il quale si ricalcola il percorso verso la tappa
 } as const;
 

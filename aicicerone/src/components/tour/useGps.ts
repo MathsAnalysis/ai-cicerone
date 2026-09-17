@@ -5,7 +5,8 @@ import type { StopItem } from '../../lib/stops';
 
 // Tracciamento in primo piano: watchPosition ad alta precisione + Wake Lock per tenere lo schermo
 // acceso (in background il browser non riceve fix). Se non arriva un fix utile — permesso negato,
-// niente segnale, HTTPS assente, utente a più di 1 km dal tour — parte la simulazione demo.
+// niente segnale, HTTPS assente, utente a più di 1 km dal tour — parte la simulazione demo; il primo
+// fix reale vicino al tour la interrompe: sul campo il GPS vero vince sempre.
 // ponytail: geofencing in background = app nativa/Capacitor (NOTE §6), fuori dalla portata del web.
 
 export type Gps = { on: boolean; sim: boolean; pos: Fix | null };
@@ -17,7 +18,7 @@ type Opts = {
   playerOpen: boolean;
   lang: string;
   T: Dict;
-  onArrive: (n: number) => void;
+  onArrive: (n: number, sim: boolean) => void;
   onSnack: (msg: string, ms?: number) => void;
 };
 
@@ -37,7 +38,7 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   const armSim = useCallback(() => {
     if (simTimer.current) clearTimeout(simTimer.current);
     simTimer.current = setTimeout(() => {
-      if (live.current.on && live.current.sim && !o.current.playerOpen) o.current.onArrive(o.current.current);
+      if (live.current.on && live.current.sim && !o.current.playerOpen) o.current.onArrive(o.current.current, true);
     }, GEO.simDelay);
   }, []);
 
@@ -62,19 +63,20 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     const first = !live.current.pos;
     live.current.pos = fix;
     setPos(fix);
-    if (first && !live.current.sim) {
-      if (simTimer.current) clearTimeout(simTimer.current);
-      o.current.onSnack(`${o.current.T.gpsFix} ±${Math.round(fix.acc)} m`);
-    }
     const { d } = nearest(fix, o.current.stops);
     if (d > GEO.far) { simMode(`${fmtDist(d, o.current.lang)} ${o.current.T.gpsFar}`); return; }
-    if (live.current.sim) return;
+    if (first || live.current.sim) {
+      if (simTimer.current) clearTimeout(simTimer.current);
+      live.current.sim = false;
+      setSim(false);
+      o.current.onSnack(`${o.current.T.gpsFix} ±${Math.round(fix.acc)} m`);
+    }
     const skip = new Set<number>([...o.current.skip, ...hit.current]);
     const r = checkArrival(arrival.current, fix, o.current.stops, skip);
     arrival.current = r.next;
     if (r.arrived != null) {
       hit.current.add(r.arrived);
-      o.current.onArrive(r.arrived);
+      o.current.onArrive(r.arrived, false);
     }
   }, [simMode]);
 
@@ -104,7 +106,7 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     if (!window.isSecureContext) { simMode(o.current.T.gpsHttps); return; }
     o.current.onSnack(o.current.T.gpsSnack);
     void wake();
-    simTimer.current = setTimeout(() => { if (!live.current.pos) simMode(o.current.T.gpsSim); }, GEO.simDelay);
+    simTimer.current = setTimeout(() => { if (!live.current.pos) simMode(o.current.T.gpsSim); }, GEO.simWait);
     watch.current = navigator.geolocation.watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
   }, [onErr, onFix, simMode, wake]);
 

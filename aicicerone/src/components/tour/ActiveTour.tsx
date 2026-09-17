@@ -39,11 +39,19 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
     snackTimer.current = setTimeout(() => setSnack(null), ms);
   }, []);
 
-  const arrive = useCallback((n: number) => {
+  const toastFor = useCallback((n: number) => {
     setToast(n);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 9000);
   }, []);
+
+  // Arrivo reale: la guida parte da sola. La notifica con tasto resta per la simulazione demo
+  // e per quando un altro video è già in riproduzione.
+  const arrive = (n: number, sim: boolean) => {
+    if (sim || player) { toastFor(n); return; }
+    setI(n);
+    setPlayer(true);
+  };
 
   const { gps, toggle } = useGps({ stops, current: i, skip: done, playerOpen: player, lang, T, onArrive: arrive, onSnack: showSnack });
   const follow = gps.on && !gps.sim && !!gps.pos;
@@ -89,7 +97,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
     const d = dist([gps.pos.lat, gps.pos.lng], s.c);
     const acc = Math.round(gps.pos.acc);
     notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > (s.r ?? GEO.radius) * 1.5 ? ` · ${T.gpsWeak}` : ''}`;
-  } else notice = gps.on ? T.noticeGps : T.notice;
+  } else notice = gps.sim ? T.noticeSim : gps.on ? T.noticeGps : T.notice;
 
   const toastStop = toast != null ? stops[toast] : null;
 
@@ -103,7 +111,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
         </div>
         <button type="button" class="btn-gps" aria-pressed={gps.on} onClick={toggle}>
           <span class="dot" />
-          <span>{gps.on ? T.gpsOn : T.gpsOff}</span>
+          <span>{gps.sim ? T.gpsDemo : gps.on ? T.gpsOn : T.gpsOff}</span>
         </button>
       </div>
       <div class="flex gap-[3px] px-5 pt-2.5" aria-hidden="true">

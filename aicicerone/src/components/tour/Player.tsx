@@ -51,8 +51,26 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
     if (!open) { v.pause(); return; }
     setHas(false); setEnded(false); setCtls(false); setT({ cur: 0, dur: 0 });
     v.src = VIDEO_DIR + file;
-    v.play().catch(() => {});
+    v.play().catch(() => setCtls(true));
   }, [open, file]);
+
+  // iOS Safari accetta play() fuori da un gesto solo su un elemento già avviato da un gesto: il primo
+  // tap sulla pagina (guida, GPS) sblocca il video, così all'arrivo alla tappa parte da solo.
+  useEffect(() => {
+    const unlock = () => {
+      const v = vid.current;
+      if (!v || v.src) return;
+      v.play().catch(() => {});
+      v.pause();
+    };
+    const opts = { capture: true, once: true, passive: true };
+    document.addEventListener('touchend', unlock, opts);
+    document.addEventListener('click', unlock, opts);
+    return () => {
+      document.removeEventListener('touchend', unlock, opts);
+      document.removeEventListener('click', unlock, opts);
+    };
+  }, []);
 
   function seekTo(x: number) {
     const v = vid.current; const r = track.current?.getBoundingClientRect();

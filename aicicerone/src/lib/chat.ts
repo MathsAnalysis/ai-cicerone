@@ -1,6 +1,3 @@
-// Client della chat con la guida: legge lo stream NDJSON prodotto da /api/chat
-// (prima riga {sources}, poi {t} per ogni pezzo di testo, infine {done}).
-
 export type Msg = { role: 'user' | 'assistant'; content: string };
 export type ChatRequest = { dest: string; tour: string; guide: string; stop: string; seen: string[]; messages: Msg[] };
 export type SourceRef = { title: string; url: string };

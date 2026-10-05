@@ -6,7 +6,7 @@ Riscrittura della demo `consegna-carlo/` (HTML/JS vanilla) in **Astro 7 + TypeSc
 - **Chat con la guida** su **IA locale** (Ollama) con accesso a internet per fondare le risposte (Wikipedia + SearXNG self-hosted).
 - **Segnalazioni** inviate via email a `carlo4340@outlook.it` e `mario@aicicerone.com`.
 - Pagine statiche prerenderizzate, un URL per destinazione e per tour (SEO: title, description, canonical, Open Graph, sitemap, JSON-LD `TouristTrip`).
-- Pulsanti secondo la tavola Claude Design «AiCicerone Buttons»; classi in `src/styles/global.css`.
+- Pulsanti e componenti di stile in `src/styles/global.css`.
 
 ## Requisiti
 
@@ -58,8 +58,8 @@ Per NVIDIA scommentare il blocco `deploy` del servizio `ollama`. Su Mac Apple Si
 
 `src/lib/geo.ts` (regole pure, testate) + `src/components/tour/useGps.ts` (browser):
 
-- `watchPosition` ad alta precisione, `maximumAge: 0`; il fix arriva dal GNSS del telefono via sistema operativo. **Wake Lock** tiene lo schermo acceso: in background il browser non riceve posizioni.
-- Arrivo a una tappa: la candidata è la **tappa più vicina in assoluto** (così due tappe a 30 m — Amenano e Pescheria — non si innescano a vicenda), non ancora incontrata, entro il suo raggio (`GEO.radius` = 50 m, cioè 100 m di diametro; per-tappa con il campo `r` in `src/data/tours.ts`: 60–150 m per piazze, parchi, aree archeologiche e monumenti grandi in tutti i tour — St Paul's, Villa Bellini, Castello Maniace, Neapolis…), con precisione del fix ≤ 1,5 × raggio, confermata da **2 fix consecutivi**. Ordine non vincolante: si può arrivare alla 7 prima della 6. All'arrivo reale **il video della guida parte da solo** (il primo tap sulla pagina sblocca l'autoplay su iOS); la notifica con tasto resta per la simulazione e per quando un altro video è già in corso.
+- `watchPosition` ad alta precisione, `maximumAge: 0`; i fix vecchi di oltre 15 s o con precisione peggiore di 200 m sono scartati, la posizione è **filtrata** (peso inversamente proporzionale all'imprecisione, quindi un fix rumoroso non sposta un fix preciso) e l'interfaccia si aggiorna solo se ci si muove di almeno 2 m; al ritorno in primo piano il tracciamento riparte se non arrivano fix da più di 15 s; il fix arriva dal GNSS del telefono via sistema operativo. **Wake Lock** tiene lo schermo acceso: in background il browser non riceve posizioni.
+- Arrivo a una tappa: la candidata è la **tappa più vicina in assoluto** (così due tappe a 30 m — Amenano e Pescheria — non si innescano a vicenda), non ancora incontrata, entro il suo raggio (`GEO.radius` = 50 m, cioè 100 m di diametro; per-tappa con il campo `r` in `src/data/tours.ts`: 60–150 m per piazze, parchi, aree archeologiche e monumenti grandi in tutti i tour — St Paul's, Villa Bellini, Castello Maniace, Neapolis…), con precisione del fix ≤ 1,2 × raggio, confermata da **3 fix consecutivi**. Ordine non vincolante: si può arrivare alla 7 prima della 6. All'arrivo reale **il video della guida parte da solo** (il primo tap sulla pagina sblocca l'autoplay su iOS); la notifica con tasto resta per la simulazione e per quando un altro video è già in corso.
 - Sulla mappa: punto blu, cerchio di precisione, **percorso pedonale dalla posizione attuale alla tappa** (OSRM, ricalcolato ogni 80 m), inquadratura che segue utente + tappa. Sotto la mappa: distanza alla tappa e precisione («Prossima tappa a 120 m · GPS ±12 m»).
 - Senza GPS utilizzabile (permesso negato, nessun segnale entro 15 s, **pagina non HTTPS**, utente a più di 1 km dal tour) l'app **lo dice e non fa scattare nessuna tappa**: gli arrivi vengono solo dalla posizione reale. Il pulsante «Incontra la tua guida» resta sempre disponibile. La **simulazione demo** (la tappa corrente viene «raggiunta» ogni pochi secondi) parte solo aprendo l'URL con `?demo`, per le dimostrazioni in ufficio; il primo fix reale vicino al tour la interrompe.
 - Limite del web: niente geofencing in background né notifiche di sistema → per il prodotto finale serve l'app nativa/Capacitor (vedi `consegna-carlo/NOTE-IMPLEMENTAZIONE.md` §6).
@@ -70,7 +70,7 @@ Mappa: **MapLibre GL JS** (open source, resa vettoriale, nessun token) su tile *
 
 `POST /api/chat/` (`src/pages/api/chat.ts`):
 
-1. Valida la richiesta (tour, guida, tappa, storico ≤ 12 turni); accetta solo richieste dallo stesso host; 30 richieste/min per IP.
+1. Valida la richiesta (tour, guida, tappa, storico ≤ 12 turni); accetta solo richieste dallo stesso host; 30 richieste/min per IP e al massimo 2 risposte in corso contemporaneamente (la terza riceve 429); lo storico è ridotto a 5000 caratteri scartando i turni più vecchi; se il client chiude la chat, la generazione si interrompe.
 2. **Recupera fonti da internet** per la domanda (`src/lib/retrieve.ts`): Wikipedia nella lingua del tour (fino a 8 voci, estratti) + SearXNG (4 risultati) se configurato, in parallelo, timeout 4 s.
 3. Costruisce il system prompt (`src/lib/prompt.ts`): persona della guida, regole (brevità, niente invenzioni, cita la fonte), testi del tour come fonte primaria, stato del tour, fonti web.
 4. Chiama Ollama in streaming (`think: false` per i modelli con ragionamento) e inoltra al client righe NDJSON `{sources}`, `{t}`, `{done}`. Sotto la risposta compaiono i link alle fonti usate.
@@ -97,7 +97,6 @@ src/
   lib/                   geo (+test) · route · stops · chat · report · api · retrieve · prompt
 public/                  favicon, manifest, robots, og.png, video/ (mp4 con i nomi di video/LEGGIMI.txt)
 deploy/                  Caddyfile, settings SearXNG
-design/buttons/          tavola Claude Design dei pulsanti (Main.dc.html)
 ```
 
 Per aggiungere destinazioni, tour o tappe si lavora solo in `src/data/tours.ts`: le pagine e la sitemap si generano da lì.

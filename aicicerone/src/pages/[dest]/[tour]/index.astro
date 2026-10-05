@@ -46,7 +46,6 @@ const jsonLd = {
   },
 };
 
-// Elenco statico delle tappe: leggibile prima di partire e indicizzabile dai motori di ricerca.
 type Row = { num: string; t: string; p: string; d: string; opt?: boolean; zone?: string; transfer?: string };
 const rows: Row[] = [];
 t.stops.forEach((s, i) => {

@@ -8,8 +8,6 @@ import type { MapProps } from './TourMap';
 
 type L = typeof Leaflet;
 
-// Fallback senza WebGL: Leaflet su tile raster Esri "World Street Map" (stradale a colori, gratuite, senza chiave).
-// Il servizio arriva al livello 19: oltre, Leaflet ingrandisce quelle tile.
 const TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 const ATTRIB = 'Esri, HERE, Garmin, © OpenStreetMap contributors';
 

@@ -10,7 +10,7 @@ import Player from './Player';
 import TourMap from './TourMap';
 import { useGps } from './useGps';
 
-type Props = { dest: string; tourId: string; tour: Tour; guide: Guide; lang: Lang; T: Dict; onLeave: () => void };
+type Props = { dest: string; tourId: string; tour: Tour; guide: Guide; lang: Lang; T: Dict };
 type SheetId = 'itin' | 'chat' | 'flag' | null;
 
 const Chev = ({ flip }: { flip?: boolean }) => (
@@ -45,8 +45,6 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
     toastTimer.current = setTimeout(() => setToast(null), 9000);
   }, []);
 
-  // Arrivo reale: la guida parte da sola. La notifica con tasto resta per la simulazione demo
-  // e per quando un altro video è già in riproduzione.
   const arrive = (n: number, sim: boolean) => {
     if (sim || player) { toastFor(n); return; }
     setI(n);
@@ -56,7 +54,6 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
   const { gps, toggle } = useGps({ stops, current: i, skip: done, playerOpen: player, lang, T, onArrive: arrive, onSnack: showSnack });
   const follow = gps.on && !gps.sim && !!gps.pos;
 
-  // Elenco statico delle tappe nascosto finché il tour è attivo; avviso iniziale.
   useEffect(() => {
     const el = document.getElementById('itinerary');
     if (el) el.hidden = true;
@@ -96,7 +93,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
   else if (follow && gps.pos) {
     const d = dist([gps.pos.lat, gps.pos.lng], s.c);
     const acc = Math.round(gps.pos.acc);
-    notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > (s.r ?? GEO.radius) * 1.5 ? ` · ${T.gpsWeak}` : ''}`;
+    notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > (s.r ?? GEO.radius) * GEO.accRatio ? ` · ${T.gpsWeak}` : ''}`;
   } else notice = gps.sim ? T.noticeSim : gps.err ?? (gps.on ? T.noticeGps : T.notice);
 
   const toastStop = toast != null ? stops[toast] : null;

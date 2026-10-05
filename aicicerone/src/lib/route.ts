@@ -1,8 +1,5 @@
 import type { LatLng } from './geo';
 
-// Percorsi pedonali reali via OSRM pubblico (dati OpenStreetMap, nessuna chiave, nessuno SLA).
-// Tutto il tour in una sola richiesta; la geometria di ogni tratta si ricompone dagli step.
-// ponytail: in produzione precalcolare i tratti tappa→tappa in build e spedirli come GeoJSON (NOTE §5).
 const FOOT = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
 const MAX_WAYPOINTS = 50;
 
@@ -16,7 +13,6 @@ export async function leg(a: LatLng, b: LatLng): Promise<LatLng[]> {
     const coords: [number, number][] | undefined = j?.routes?.[0]?.geometry?.coordinates;
     if (coords?.length) return coords.map(toLatLng);
   } catch {
-    // rete assente o router giù: linea retta
   }
   return [a, b];
 }

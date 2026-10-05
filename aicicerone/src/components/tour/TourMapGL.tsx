@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Map as MlMap, Marker as MlMarker, GeoJSONSource } from 'maplibre-gl';
-// MapLibre cerca il worker accanto al proprio modulo (`./maplibre-gl-worker.mjs`), che dopo il bundling
-// non esiste: lo facciamo impacchettare a Vite e passiamo l'URL con setWorkerUrl.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { GEO, dist, type Fix, type LatLng } from '../../lib/geo';
 import { leg, loadRoute } from '../../lib/route';
@@ -14,21 +12,18 @@ type Props = {
   current: number;
   done: ReadonlySet<number>;
   pos: Fix | null;
-  follow: boolean; // GPS reale attivo (non simulazione): la vista segue utente + tappa
+  follow: boolean;
   onPick: (n: number) => void;
 };
 
 type ML = typeof import('maplibre-gl');
 
-// MapLibre GL (open source, senza token) su tile vettoriali OpenFreeMap (OpenStreetMap, gratuite,
-// senza registrazione né limiti). Stile "liberty": strade, nomi, punti d'interesse ed edifici a colori.
 const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 const lngLat = (c: LatLng): [number, number] => [c[1], c[0]];
 const line = (pts: LatLng[], props: Record<string, unknown> = {}) => ({ type: 'Feature' as const, properties: props, geometry: { type: 'LineString' as const, coordinates: pts.map(lngLat) } });
 const empty = () => ({ type: 'FeatureCollection' as const, features: [] as ReturnType<typeof line>[] });
 
-// Poligono approssimato del cerchio di precisione (raggio in metri).
 function circle(p: Fix, n = 48) {
   const dLat = p.acc / 111_320;
   const dLng = p.acc / (111_320 * Math.cos((p.lat * Math.PI) / 180));
@@ -96,7 +91,6 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
     return () => { alive = false; };
   }, [routeKey]);
 
-  // Tratte, marcatori e inquadratura.
   useEffect(() => {
     const lib = ml.current; const m = map.current;
     if (!lib || !m || !ready) return;
@@ -125,7 +119,6 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
     return () => clearTimeout(t);
   }, [ready, legs, stops, current, done, follow]);
 
-  // Posizione dell'utente: punto blu + cerchio di precisione.
   useEffect(() => {
     const lib = ml.current; const m = map.current;
     if (!lib || !m || !ready) return;
@@ -150,8 +143,6 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
     }
   }, [ready, pos]);
 
-  // Percorso a piedi dalla posizione attuale alla tappa: ricalcolato se l'utente si sposta di GEO.reroute
-  // o cambia tappa. ponytail: una richiesta al router pubblico ogni ~80 m; in produzione router proprio.
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

@@ -27,7 +27,7 @@ export default function GuidePicker({ dest, tour, T, onStart }: Props) {
                 <span class="lock">{T.soon}</span>
               </div>
             ) : (
-              <button type="button" class="gcard" key={g.id} aria-selected={sel === g.id} onClick={() => { setSel(g.id); onStart(g.id); }}>
+              <button type="button" class="gcard" key={g.id} aria-pressed={sel === g.id} onClick={() => { setSel(g.id); onStart(g.id); }}>
                 <span class="gportrait">{g.init}</span>
                 <span><h3>{g.name}</h3><p class="role">{g.role}</p><p class="bio">{g.bio}</p></span>
               </button>

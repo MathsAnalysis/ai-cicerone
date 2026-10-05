@@ -1,5 +1,3 @@
-# Stack completo su un solo server: sito + IA locale (Ollama) + ricerca web (SearXNG) + HTTPS (Caddy).
-# Uso: copiare .env.example in .env, impostare DOMAIN e SMTP_URL, poi `docker compose up -d --build`.
 services:
   app:
     build: .
@@ -15,13 +13,7 @@ services:
     image: ollama/ollama:latest
     restart: unless-stopped
     volumes: [ollama:/root/.ollama]
-    # GPU NVIDIA: scommentare (richiede nvidia-container-toolkit)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]
 
-  # Scarica il modello al primo avvio (CHAT_MODEL da .env, default qwen3:8b).
   ollama-pull:
     image: ollama/ollama:latest
     depends_on: [ollama]

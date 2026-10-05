@@ -10,12 +10,10 @@ export type MapProps = {
   current: number;
   done: ReadonlySet<number>;
   pos: Fix | null;
-  follow: boolean; // GPS reale attivo (non simulazione): la vista segue utente + tappa
+  follow: boolean;
   onPick: (n: number) => void;
 };
 
-// Mappa vettoriale MapLibre + OpenFreeMap dove c'è WebGL2 (tutti i telefoni recenti); altrimenti
-// mappa raster Leaflet. Entrambe caricate solo quando servono: le pagine statiche non le pagano.
 function hasWebGL2(): boolean {
   try {
     return !!document.createElement('canvas').getContext('webgl2');

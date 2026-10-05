@@ -1,9 +1,6 @@
 import type { Guide, Lang, Tour } from '../data/tours';
 import type { Source } from './retrieve';
 
-// System prompt della guida per il modello locale: persona, regole, testi del tour (fonte primaria),
-// stato del tour e fonti web recuperate per la domanda corrente.
-
 const RULES: Record<Lang, string> = {
   it: `REGOLE
 - Rispondi sempre in italiano, in prima persona, con la voce e il carattere del personaggio; mai uscire dal personaggio, ma sei una guida onesta.
@@ -54,8 +51,6 @@ export function systemPrompt(lang: Lang, tour: Tour, guide: Guide, stop: string,
   return [persona, RULES[lang], `${L ? 'TESTI DEL TOUR (fonte primaria)' : 'TOUR TEXTS (primary source)'}\n${tourText(lang, tour)}`, state].join('\n\n');
 }
 
-// Le fonti vanno nel turno dell'utente, subito prima della domanda: i modelli piccoli le seguono
-// molto meglio che in fondo a un lungo system prompt.
 export function userTurn(lang: Lang, question: string, sources: Source[]): string {
   const L = lang === 'it';
   const web = sources.length

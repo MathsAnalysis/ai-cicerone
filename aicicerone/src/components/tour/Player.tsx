@@ -26,7 +26,6 @@ const mmss = (s: number) => { s = Math.max(0, Math.floor(s || 0)); return `${Mat
 const IcoPlay = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5L8 5.5z" /></svg>;
 const IcoPause = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1" /><rect x="13.4" y="5" width="3.6" height="14" rx="1" /></svg>;
 
-// Player verticale 9:16 con comandi custom: tap → play/pausa, barra trascinabile, comandi che sfumano.
 export default function Player({ open, stop, file, guide, T, hasPrev, isLast, prevName, nextName, onPrev, onNext, onClose, onEnded, onSnack }: Props) {
   const vid = useRef<HTMLVideoElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -38,6 +37,8 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
   const [t, setT] = useState({ cur: 0, dur: 0 });
   const ctlTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seeking = useRef(false);
+  const fileRef = useRef(file);
+  fileRef.current = file;
 
   const showCtls = () => {
     setCtls(true);
@@ -54,14 +55,12 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
     v.play().catch(() => setCtls(true));
   }, [open, file]);
 
-  // iOS Safari accetta play() fuori da un gesto solo su un elemento già avviato da un gesto: il primo
-  // tap sulla pagina (guida, GPS) sblocca il video, così all'arrivo alla tappa parte da solo.
   useEffect(() => {
     const unlock = () => {
       const v = vid.current;
       if (!v || v.src) return;
-      v.play().catch(() => {});
-      v.pause();
+      v.src = VIDEO_DIR + fileRef.current;
+      v.play().then(() => v.pause()).catch(() => {});
     };
     const opts = { capture: true, once: true, passive: true };
     document.addEventListener('touchend', unlock, opts);

@@ -2,7 +2,6 @@ import type { ComponentChildren } from 'preact';
 
 type Props = { open: boolean; title: string; onClose: () => void; children: ComponentChildren; footer?: ComponentChildren };
 
-// Foglio dal basso con velo; resta montato e scivola con data-on per l'animazione.
 export default function Sheet({ open, title, onClose, children, footer }: Props) {
   return (
     <>

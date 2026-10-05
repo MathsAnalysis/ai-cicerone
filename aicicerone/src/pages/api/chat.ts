@@ -2,29 +2,14 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { DEST, TOURS } from '../../data/tours';
-import { clientIp, env, json, limited, readJson, sameOrigin, str, thinks } from '../../lib/api';
+import { acquire, clientIp, env, json, limited, readJson, sameOrigin, str, thinks } from '../../lib/api';
+import { parseMessages } from '../../lib/messages';
 import { systemPrompt, userTurn } from '../../lib/prompt';
 import { retrieve } from '../../lib/retrieve';
 
-const MAX_MESSAGES = 12;
-const MAX_MESSAGE = 1500;
+const MAX_PARALLEL = 2;
+const LLM_TIMEOUT = 180_000;
 const NDJSON = { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' };
-
-type Msg = { role: 'user' | 'assistant'; content: string };
-
-// Storico breve, ruoli alternati, ultimo turno dell'utente.
-function parseMessages(v: unknown): Msg[] | null {
-  if (!Array.isArray(v) || v.length === 0 || v.length > MAX_MESSAGES) return null;
-  const out: Msg[] = [];
-  for (const m of v) {
-    const role = m?.role === 'user' || m?.role === 'assistant' ? m.role : null;
-    const content = str(m?.content, MAX_MESSAGE);
-    if (!role || !content) return null;
-    if (out.length && out[out.length - 1].role === role) return null;
-    out.push({ role, content });
-  }
-  return out[0].role === 'user' && out[out.length - 1].role === 'user' ? out : null;
-}
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!sameOrigin(request)) return json(403, { error: 'forbidden' });
@@ -45,11 +30,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   const seen = Array.isArray(body.seen) ? body.seen.filter((s): s is string => typeof s === 'string' && s.length <= 4).slice(0, 40) : [];
 
+  const release = acquire('chat', MAX_PARALLEL);
+  if (!release) return json(429, { error: 'busy' });
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(LLM_TIMEOUT)]);
+  signal.addEventListener('abort', release, { once: true });
+
   const question = messages[messages.length - 1].content;
-  const sources = await retrieve(question, dest.lang, tour.city);
+  const sources = await retrieve(question, dest.lang, tour.city, signal);
   const system = systemPrompt(dest.lang, tour, guide, stop, seen);
   const model = env.model;
-  // Qwen3 ibrido: oltre a think:false, l'interruttore nel testo evita che il ragionamento finisca nella risposta.
   const noThink = /qwen3/i.test(model) ? ' /no_think' : '';
   const outgoing = [...messages.slice(0, -1), { role: 'user' as const, content: userTurn(dest.lang, question, sources) + noThink }];
 
@@ -63,26 +52,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         stream: true,
         keep_alive: '30m',
         ...(thinks(model) ? { think: false } : {}),
-        // num_ctx esplicito: il default di Ollama (4096) troncherebbe il system prompt con i testi del tour.
         options: { temperature: 0.2, num_predict: 400, num_ctx: 8192 },
         messages: [{ role: 'system', content: system }, ...outgoing],
       }),
-      signal: AbortSignal.timeout(180_000),
+      signal,
     });
   } catch (e) {
+    release();
     console.error('chat: LLM non raggiungibile', env.llmUrl, e instanceof Error ? e.message : e);
     return json(502, { error: 'llm_unreachable' });
   }
   if (!upstream.ok || !upstream.body) {
+    release();
     console.error('chat: LLM', upstream.status, await upstream.text().catch(() => ''));
     return json(502, { error: 'llm_error' });
   }
 
-  // Ollama emette NDJSON {message:{content}, done}; al client passiamo {sources}, {t}, {done}.
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   let buf = '';
-  let thinking = false; // alcuni modelli emettono comunque <think>…</think>: non va mostrato
+  let thinking = false;
   const line = (o: unknown) => enc.encode(JSON.stringify(o) + '\n');
   const visible = (t: string): string => {
     let out = '';
@@ -119,11 +108,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           const t = j.message?.content ? visible(String(j.message.content)) : '';
           if (t) ctrl.enqueue(line({ t }));
         } catch {
-          // riga incompleta o non JSON: ignorata
         }
       }
     },
     flush(ctrl) {
+      release();
       ctrl.enqueue(line({ done: true }));
     },
   });

@@ -19,7 +19,6 @@ type Props = {
   onSnack: (m: string, ms?: number) => void;
 };
 
-// Le segnalazioni arrivano via email alla redazione (destinatari in REPORT_TO sul server).
 export default function FlagSheet({ open, onClose, dest, tourId, guideId, lang, stops, current, pos, T, onSnack }: Props) {
   const [stopN, setStopN] = useState(current);
   const [type, setType] = useState(0);

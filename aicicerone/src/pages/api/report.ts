@@ -5,7 +5,6 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { DEST, TOURS } from '../../data/tours';
 import { clientIp, env, json, limited, readJson, sameOrigin, str } from '../../lib/api';
 
-// Destinatari di ogni segnalazione. Sovrascrivibili con REPORT_TO (lista separata da virgole).
 const DEFAULT_TO = ['carlo4340@outlook.it', 'mario@aicicerone.com'];
 
 let transport: Transporter | null = null;
@@ -73,7 +72,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     `Pagina: ${url}`,
     `Versione app: ${appVersion}`,
     `Data (UTC): ${when}`,
-    `IP: ${ip}`,
   ];
   try {
     await m.sendMail({

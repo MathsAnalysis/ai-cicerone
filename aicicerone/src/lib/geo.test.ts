@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkArrival, dist, fmtDist, nearest, type Fix, type LatLng } from './geo.ts';
+import { checkArrival, dist, fmtDist, nearest, smooth, type Arrival, type Fix, type LatLng } from './geo.ts';
 
-// Fontana dell'Amenano e La Pescheria (Catania): ~31 m, il caso più stretto del catalogo.
 const AMENANO: LatLng = [37.5019, 15.0876];
 const PESCHERIA: LatLng = [37.50166, 15.0874];
 const STOPS = [{ c: AMENANO }, { c: PESCHERIA }];
@@ -23,11 +22,23 @@ test('nearest picks the closest stop', () => {
   assert.equal(nearest(at(PESCHERIA), STOPS).n, 1);
 });
 
-test('arrival needs two consecutive fixes', () => {
-  const first = checkArrival(null, at(AMENANO), STOPS, new Set());
-  assert.equal(first.arrived, null);
-  const second = checkArrival(first.next, at(AMENANO), STOPS, new Set());
-  assert.equal(second.arrived, 0);
+const walk = (p: Fix, times: number, skip = new Set<number>()) => {
+  let state: { next: Arrival; arrived: number | null } = { next: null, arrived: null };
+  for (let i = 0; i < times; i++) state = checkArrival(state.next, p, STOPS, skip);
+  return state;
+};
+
+test('arrival needs three consecutive fixes', () => {
+  assert.equal(walk(at(AMENANO), 2).arrived, null);
+  assert.equal(walk(at(AMENANO), 3).arrived, 0);
+});
+
+test('a fix outside the radius resets the count', () => {
+  const far: Fix = { lat: AMENANO[0] + 0.01, lng: AMENANO[1], acc: 10 };
+  const two = walk(at(AMENANO), 2);
+  const reset = checkArrival(two.next, far, STOPS, new Set());
+  assert.equal(reset.next, null);
+  assert.equal(checkArrival(reset.next, at(AMENANO), STOPS, new Set()).arrived, null);
 });
 
 test('standing at an already-met stop never triggers the neighbour 31 m away', () => {
@@ -37,27 +48,48 @@ test('standing at an already-met stop never triggers the neighbour 31 m away', (
 });
 
 test('walking to the neighbour triggers it once it is the nearest', () => {
-  let state = checkArrival(null, at(PESCHERIA), STOPS, new Set([0]));
-  state = checkArrival(state.next, at(PESCHERIA), STOPS, new Set([0]));
-  assert.equal(state.arrived, 1);
+  assert.equal(walk(at(PESCHERIA), 3, new Set([0])).arrived, 1);
 });
 
-test('inaccurate fixes are ignored', () => {
-  const r = checkArrival({ n: 0, count: 1 }, at(AMENANO, 90), STOPS, new Set());
+test('inaccurate fixes never trigger an arrival', () => {
+  const r = checkArrival({ n: 0, count: 2 }, at(AMENANO, 90), STOPS, new Set());
   assert.equal(r.arrived, null);
-  assert.equal(r.next, null);
 });
 
 test('per-stop radius overrides the default', () => {
-  const near: Fix = { lat: AMENANO[0] + 0.00025, lng: AMENANO[1], acc: 10 }; // ~28 m nord
-  const wide = checkArrival({ n: 0, count: 1 }, near, [{ c: AMENANO, r: 60 }], new Set());
-  const tight = checkArrival({ n: 0, count: 1 }, near, [{ c: AMENANO, r: 20 }], new Set());
+  const near: Fix = { lat: AMENANO[0] + 0.00025, lng: AMENANO[1], acc: 10 };
+  const wide = checkArrival({ n: 0, count: 2 }, near, [{ c: AMENANO, r: 60 }], new Set());
+  const tight = checkArrival({ n: 0, count: 2 }, near, [{ c: AMENANO, r: 20 }], new Set());
   assert.equal(wide.arrived, 0);
   assert.equal(tight.arrived, null);
 });
 
+test('a fix less precise than the radius is ignored without resetting the count', () => {
+  const prev = { n: 0, count: 2 };
+  const r = checkArrival(prev, at(AMENANO, 70), [{ c: AMENANO }], new Set());
+  assert.equal(r.arrived, null);
+  assert.deepEqual(r.next, prev);
+});
+
+test('smooth: first fix passes through', () => {
+  const f = at(AMENANO, 10);
+  assert.deepEqual(smooth(null, f, 1), f);
+});
+
+test('smooth: a noisy fix barely moves an accurate position', () => {
+  const noisy: Fix = { lat: AMENANO[0] + 0.001, lng: AMENANO[1], acc: 150 };
+  const s = smooth(at(AMENANO, 8), noisy, 1);
+  assert.ok(dist([s.lat, s.lng], AMENANO) < 5, `moved ${dist([s.lat, s.lng], AMENANO)}`);
+});
+
+test('smooth: an accurate fix wins over a poor position', () => {
+  const good: Fix = { lat: AMENANO[0] + 0.001, lng: AMENANO[1], acc: 5 };
+  const s = smooth(at(AMENANO, 120), good, 1);
+  assert.ok(dist([s.lat, s.lng], [good.lat, good.lng]) < 5);
+});
+
 test('default radius: 45 m from the stop counts as arrived (field request: 50 m)', () => {
-  const near: Fix = { lat: AMENANO[0] + 0.0004, lng: AMENANO[1], acc: 15 }; // ~44 m nord
-  const r = checkArrival({ n: 0, count: 1 }, near, [{ c: AMENANO }], new Set());
+  const near: Fix = { lat: AMENANO[0] + 0.0004, lng: AMENANO[1], acc: 15 };
+  const r = checkArrival({ n: 0, count: 2 }, near, [{ c: AMENANO }], new Set());
   assert.equal(r.arrived, 0);
 });

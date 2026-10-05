@@ -1,7 +1,5 @@
 import type { Lang } from './data/tours';
 
-// Stringhe di interfaccia. Niente testo hard-coded nei componenti: ogni frase passa da qui.
-// I testi redazionali (descrizioni tappe, bio, chat) restano in data/tours.ts.
 const en = {
   claim: 'Every Traveller. No Exceptions.',
   lede1: 'No timetable. No group.',

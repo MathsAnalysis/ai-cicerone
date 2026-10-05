@@ -1,5 +1,3 @@
-// Segnalazione discrepanze: POST a /api/report, che la inoltra via email alla redazione.
-
 export type Report = {
   dest: string;
   tour: string;

@@ -2,14 +2,12 @@ import { VIDEOS, type Stop, type Tour } from '../data/tours';
 
 export type StopItem = Stop & { num: string; isOpt?: boolean };
 
-// Elenco tappe del tour, con la tappa opzionale inserita al suo posto se attiva.
 export function stopList(tour: Tour, opt: boolean): StopItem[] {
   const l: StopItem[] = tour.stops.map((s, n) => ({ ...s, num: String(n + 1) }));
   if (tour.optional && opt) l.splice(tour.optional.after, 0, { ...tour.optional, num: tour.optional.label, isOpt: true });
   return l;
 }
 
-// Numero "di zona" di una tappa: la 8b conta come 9 per intestazioni di zona e avviso di transfer.
 export function headNum(s: StopItem): number {
   return s.isOpt ? parseInt(s.num, 10) + 1 : Number(s.num);
 }

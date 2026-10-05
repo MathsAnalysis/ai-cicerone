@@ -60,7 +60,6 @@ export default function ChatSheet({ open, onClose, dest, tourId, guide, stop, se
     } catch (e) {
       history.current.pop();
       if ((e as Error).name === 'AbortError') return;
-      // IA non raggiungibile: risposta dimostrativa, e lo diciamo.
       const canned = REPLY[guide.id] ?? [];
       patchLast((b) => ({ ...b, text: canned[Math.floor(Math.random() * canned.length)] ?? T.chatErr, sources: undefined }));
       onSnack(T.chatOffline);

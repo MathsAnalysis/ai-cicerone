@@ -1,4 +1,3 @@
-// Dati di destinazioni, tour e tappe. Generato da consegna-carlo/tours-all.js: modificare qui, non altrove.
 export type Lang = "it" | "en";
 export type Guide = { id: string; name: string; role: string; bio: string; init: string; soon?: boolean };
 export type Stop = { t: string; p: string; c: [number, number]; d: string; r?: number };
@@ -529,7 +528,6 @@ export const TOURS: Record<string, Tour> = {
   }
 };
 
-// nome file video per tour (indice = tappa - 1); chiave "<tour>_opt" per la tappa opzionale
 export const VIDEOS: Record<string, string[] | string> = {
   "rebuilding": [
     "Ldn-01-guildhall",

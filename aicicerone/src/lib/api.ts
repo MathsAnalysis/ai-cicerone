@@ -1,7 +1,3 @@
-// Helper condivisi dagli endpoint server (Node). Confine di fiducia: tutto ciò che arriva dal client
-// viene validato qui o nell'endpoint, mai passato oltre così com'è.
-
-// Variabili lette a runtime (process.env in produzione; in `astro dev` arrivano dal file .env via Vite).
 const read = (k: string): string => process.env[k] ?? (import.meta as { env?: Record<string, string | undefined> }).env?.[k] ?? '';
 export const env = {
   get llmUrl() { return (read('LLM_URL') || 'http://localhost:11434').replace(/\/$/, ''); },
@@ -12,7 +8,6 @@ export const env = {
   get reportTo() { return read('REPORT_TO').split(',').map((s) => s.trim()).filter(Boolean); },
 };
 
-// Modelli con "ragionamento" esplicito: lo spegniamo, serve una risposta rapida in strada.
 export const thinks = (model: string): boolean => /qwen3|deepseek-r1|gpt-oss|magistral/i.test(model);
 
 export function json(status: number, body: unknown): Response {
@@ -22,7 +17,6 @@ export function json(status: number, body: unknown): Response {
   });
 }
 
-// Accettiamo POST solo dal nostro stesso host (dietro reverse proxy vale X-Forwarded-Host).
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin) return false;
@@ -39,7 +33,6 @@ export function clientIp(request: Request, fallback?: string): string {
   return xff?.split(',')[0].trim() || fallback || 'local';
 }
 
-// ponytail: contatori in memoria del processo; con più istanze passare a Redis.
 const buckets = new Map<string, { n: number; reset: number }>();
 export function limited(scope: string, ip: string, limit: number, windowMs = 60_000): boolean {
   const now = Date.now();
@@ -52,6 +45,19 @@ export function limited(scope: string, ip: string, limit: number, windowMs = 60_
   }
   b.n++;
   return b.n > limit;
+}
+
+const inflight = new Map<string, number>();
+export function acquire(scope: string, max: number): (() => void) | null {
+  const n = inflight.get(scope) ?? 0;
+  if (n >= max) return null;
+  inflight.set(scope, n + 1);
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    inflight.set(scope, Math.max(0, (inflight.get(scope) ?? 1) - 1));
+  };
 }
 
 export async function readJson(request: Request, max: number): Promise<Record<string, unknown> | null> {

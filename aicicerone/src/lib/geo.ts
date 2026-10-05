@@ -1,21 +1,21 @@
-// Geofencing delle tappe. Pure functions: nessun accesso al browser, testabili con `npm test`.
-// ponytail: si usano i fix grezzi del sistema operativo (CoreLocation / Fused Location Provider li filtrano già);
-// aggiungere un Kalman solo se sul campo il marcatore risulta instabile.
-
 export type LatLng = [number, number];
 export type Fix = { lat: number; lng: number; acc: number };
 export type Arrival = { n: number; count: number } | null;
 
 export const GEO = {
-  radius: 50, // m — raggio di default di ogni tappa (diametro 100 m, richiesta dal test sul campo); per-tappa via campo `r` in data/tours.ts
-  hits: 2, // fix consecutivi dentro il raggio prima di dichiarare l'arrivo
-  far: 1000, // m — oltre questa distanza da ogni tappa il GPS è chiaramente "fuori sede": simulazione demo
-  simWait: 15000, // ms — senza alcun fix entro questo tempo parte la simulazione demo (in città il primo fix può tardare 10 s)
-  simDelay: 7000, // ms — ritmo della simulazione: una tappa "raggiunta" ogni tanto
-  reroute: 80, // m — spostamento dell'utente oltre il quale si ricalcola il percorso verso la tappa
+  radius: 50,
+  hits: 3,
+  accRatio: 1.2,
+  maxAcc: 200,
+  maxAge: 15000,
+  minMove: 2,
+  walk: 2,
+  far: 1000,
+  simWait: 15000,
+  simDelay: 7000,
+  reroute: 80,
 } as const;
 
-// Equirettangolare: errore < 0.1% sotto i 10 km, più che sufficiente per un tour a piedi.
 export function dist(a: LatLng, b: LatLng): number {
   const R = 6371e3;
   const x = ((b[0] - a[0]) * Math.PI) / 180;
@@ -38,9 +38,14 @@ export function nearest(fix: Fix, stops: readonly { c: LatLng }[]): { n: number;
   return { n, d };
 }
 
-// Regola di arrivo: la tappa candidata è la più vicina in assoluto (Voronoi), così due tappe a 30 m
-// non si innescano a vicenda; deve essere non ancora incontrata, entro il suo raggio, con un fix
-// abbastanza preciso, e confermata da `GEO.hits` fix consecutivi.
+export function smooth(prev: Fix | null, fix: Fix, dt: number): Fix {
+  if (!prev) return fix;
+  const drift = GEO.walk * Math.max(0, dt);
+  const v = prev.acc * prev.acc + drift * drift;
+  const k = v / (v + fix.acc * fix.acc);
+  return { lat: prev.lat + k * (fix.lat - prev.lat), lng: prev.lng + k * (fix.lng - prev.lng), acc: fix.acc };
+}
+
 export function checkArrival(
   prev: Arrival,
   fix: Fix,
@@ -50,7 +55,8 @@ export function checkArrival(
   const { n, d } = nearest(fix, stops);
   if (n < 0) return { next: null, arrived: null };
   const r = stops[n].r ?? GEO.radius;
-  if (skip.has(n) || d > r || fix.acc > r * 1.5) return { next: null, arrived: null };
+  if (fix.acc > r * GEO.accRatio) return { next: prev, arrived: null };
+  if (skip.has(n) || d > r) return { next: null, arrived: null };
   const count = prev && prev.n === n ? prev.count + 1 : 1;
   if (count >= GEO.hits) return { next: null, arrived: n };
   return { next: { n, count }, arrived: null };

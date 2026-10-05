@@ -136,7 +136,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
 
       <div class="flex gap-[9px] px-5 pt-3.5">
         <button type="button" class="btn btn-nav" aria-label="Previous stop" disabled={i === 0} onClick={() => setI(i - 1)}><Chev /></button>
-        <button type="button" class="btn btn-p btn-sm" onClick={() => setPlayer(true)}>{T.play}</button>
+        <button type="button" class="btn btn-p btn-sm" onClick={() => setPlayer(true)}>{tour.textOnly ? T.readStory : T.play}</button>
         <button type="button" class="btn btn-nav" aria-label="Next stop" disabled={last} onClick={next}><Chev flip /></button>
       </div>
       <div class="flex flex-col gap-[9px] px-5 pt-3.5">
@@ -153,7 +153,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
       <FlagSheet open={sheet === 'flag'} onClose={() => setSheet(null)} dest={dest} tourId={tourId} guideId={guide.id} lang={lang} stops={stops} current={i} pos={gps.pos} T={T} onSnack={showSnack} />
 
       <Player
-        open={player} stop={s} file={videoFile(tourId, s)} guide={guide} T={T}
+        open={player} stop={s} file={videoFile(tourId, s)} guide={guide} T={T} textOnly={tour.textOnly}
         hasPrev={i > 0} isLast={last} prevName={i > 0 ? stops[i - 1].t : ''} nextName={last ? '' : stops[i + 1].t}
         onPrev={() => setI(i - 1)} onNext={advance} onClose={() => setPlayer(false)} onEnded={() => { if (follow) advance(); else markDone(i); }} onSnack={showSnack}
       />
@@ -166,7 +166,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
           <div class="text-[10.5px] font-bold tracking-[0.13em] text-terra uppercase">{T.toastK}</div>
           <div class="mt-0.5 font-serif text-base leading-[1.2]">{toastStop?.t}</div>
           <div class="mt-[3px] text-[12.5px] leading-[1.4] text-mute">{guide.name} {T.toastP}</div>
-          <button type="button" class="btn-toast" onClick={() => { if (toast != null) setI(toast); setToast(null); setPlayer(true); }}>{T.toastGo}</button>
+          <button type="button" class="btn-toast" onClick={() => { if (toast != null) setI(toast); setToast(null); setPlayer(true); }}>{tour.textOnly ? T.readStory : T.toastGo}</button>
         </div>
       </div>
       <div class="snack" data-on={snack != null} role="status">{snack}</div>

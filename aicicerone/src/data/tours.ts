@@ -4,7 +4,7 @@ export type Stop = { t: string; p: string; c: [number, number]; d: string; r?: n
 export type OptionalStop = Stop & { after: number; label: string };
 export type Tour = {
   name: string; city: string; region: string; dur: string; sub?: string; center: [number, number];
-  guides: Guide[]; stops: Stop[]; soon?: boolean; zones?: Record<string, string>;
+  guides: Guide[]; stops: Stop[]; soon?: boolean; textOnly?: boolean; zones?: Record<string, string>;
   transferBefore?: number; transferTxt?: string; optional?: OptionalStop; teaser?: string; by?: string;
 };
 export type Dest = { name: string; lang: Lang; sub: string; badge: string; tours: string[]; pickEyebrow: string; pickTitle: string };
@@ -165,16 +165,68 @@ export const TOURS: Record<string, Tour> = {
     "name": "Westminster: Parliament & the Abbey",
     "city": "London",
     "region": "United Kingdom",
-    "dur": "≈ 2h · 7 stops",
-    "soon": true,
-    "teaser": "This is where I leave you for today. But this square, Parliament, Westminster Abbey, the seat of government itself, deserves its own telling, and its own guide. Join us for the next chapter of London's story.",
-    "by": "Sir Christopher Wren, closing Rebuilding London",
-    "center": [
-      51.4995,
-      -0.1248
-    ],
-    "guides": [],
-    "stops": []
+    "dur": "≈ 2h 30′ · estimate",
+    "sub": "7 stops · walking tour · stories and GPS",
+    "textOnly": true,
+    "center": [51.505, -0.133],
+    "guides": [{
+      "id": "londoner",
+      "name": "The Londoner",
+      "role": "AI Living Guide",
+      "bio": "A fictional local guide for this walking tour. Tell the visitor about the places around them using the tour texts; never claim personal memories or a historical identity.",
+      "init": "L"
+    }],
+    "stops": [
+      {
+        "t": "Parliament Square & Big Ben",
+        "p": "Parliament Square, Westminster",
+        "c": [51.50065, -0.12645],
+        "r": 60,
+        "d": "Begin in Parliament Square, beside the Houses of Parliament and within sight of Big Ben. This is the meeting point between the streets of Westminster and the seat of Parliament. Stay on the public pavements as you look towards the tower."
+      },
+      {
+        "t": "Westminster Abbey",
+        "p": "The Sanctuary, Westminster",
+        "c": [51.49945, -0.12855],
+        "r": 60,
+        "d": "Walk to the outside of Westminster Abbey. Its architecture and royal associations make it one of the defining landmarks of this neighbourhood. This walking tour explores the exterior; entering the Abbey is a separate visit."
+      },
+      {
+        "t": "Whitehall & Horse Guards",
+        "p": "Whitehall, Horse Guards entrance",
+        "c": [51.50465, -0.12625],
+        "r": 50,
+        "d": "Follow Whitehall, the avenue of government buildings, towards Horse Guards. Along this stretch are the Cenotaph and the entrance to Downing Street. Keep to the public pavement and view Horse Guards from the street."
+      },
+      {
+        "t": "St James's Park",
+        "p": "Blue Bridge, St James's Park",
+        "c": [51.50255, -0.13375],
+        "r": 50,
+        "d": "Enter St James's Park and cross towards the lake and Blue Bridge. The trees and water offer a quieter passage between Westminster and Buckingham Palace. Follow the public paths; if a park gate is closed, use the surrounding streets."
+      },
+      {
+        "t": "Buckingham Palace",
+        "p": "Victoria Memorial, palace forecourt",
+        "c": [51.50185, -0.14065],
+        "r": 70,
+        "d": "The Victoria Memorial gives you a view of Buckingham Palace and its gates. The palace is a royal residence, and this stop stays outside on the public forecourt. Ceremonies and interior visits depend on the official schedule; do not assume they are taking place today."
+      },
+      {
+        "t": "Piccadilly Circus",
+        "p": "Shaftesbury Memorial Fountain",
+        "c": [51.50985, -0.13455],
+        "r": 50,
+        "d": "Continue towards Piccadilly Circus, where busy streets, illuminated screens and the memorial fountain meet. This is a gateway to the West End. Use the pedestrian crossings before pausing by the fountain to take in the square."
+      },
+      {
+        "t": "Trafalgar Square",
+        "p": "Nelson's Column, Trafalgar Square",
+        "c": [51.50775, -0.12795],
+        "r": 60,
+        "d": "Finish in Trafalgar Square, beside Nelson's Column and the fountains. The National Gallery stands on the north side; Whitehall leads south towards the start of this tour. Take time to look across the square before choosing where to explore next."
+      }
+    ]
   },
   "catania": {
     "name": "Catania",
@@ -577,6 +629,7 @@ export const VIDEOS: Record<string, string[] | string> = {
 };
 
 export const CHAT: Record<string, string[]> = {
+  "londoner": ["Welcome to Westminster. We will walk from Parliament Square to Trafalgar Square, passing the Abbey, Whitehall, the park, Buckingham Palace and Piccadilly Circus. Ask me about the place in front of you or the next stop."],
   "wren": [
     "I rebuilt fifty-two churches in this city and buried myself under one of them. Ask me about stone, fire, or what London refused to let me build."
   ],
@@ -591,6 +644,7 @@ export const CHAT: Record<string, string[]> = {
   ]
 };
 export const CHIPS: Record<string, string[]> = {
+  "londoner": ["What can I see here?", "Where is the next stop?", "Tell me about Trafalgar Square", "Does this tour go inside the buildings?"],
   "wren": [
     "Why is the dome that shape?",
     "What did the Fire destroy?",
@@ -617,6 +671,7 @@ export const CHIPS: Record<string, string[]> = {
   ]
 };
 export const REPLY: Record<string, string[]> = {
+  "londoner": ["This tour follows public streets and park paths. Visits inside the buildings are separate; check their official information for entry and opening times."],
   "wren": [
     "The Fire of 1666 cleared four-fifths of the walled city in four days. What you walk through is not old London — it is the answer to that fire.",
     "I proposed straight avenues and open squares. The city refused: property lines were older than my drawings, and they won. London is medieval underneath and Georgian on the surface.",

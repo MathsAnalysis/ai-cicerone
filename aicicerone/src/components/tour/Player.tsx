@@ -5,6 +5,7 @@ import type { StopItem } from '../../lib/stops';
 
 type Props = {
   open: boolean;
+  textOnly?: boolean;
   stop: StopItem;
   file: string;
   guide: Guide;
@@ -26,7 +27,7 @@ const mmss = (s: number) => { s = Math.max(0, Math.floor(s || 0)); return `${Mat
 const IcoPlay = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5L8 5.5z" /></svg>;
 const IcoPause = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1" /><rect x="13.4" y="5" width="3.6" height="14" rx="1" /></svg>;
 
-export default function Player({ open, stop, file, guide, T, hasPrev, isLast, prevName, nextName, onPrev, onNext, onClose, onEnded, onSnack }: Props) {
+export default function Player({ open, textOnly = false, stop, file, guide, T, hasPrev, isLast, prevName, nextName, onPrev, onNext, onClose, onEnded, onSnack }: Props) {
   const vid = useRef<HTMLVideoElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [has, setHas] = useState(false);
@@ -49,16 +50,16 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
   useEffect(() => {
     const v = vid.current;
     if (!v) return;
-    if (!open) { v.pause(); return; }
+    if (!open || textOnly) { v.pause(); return; }
     setHas(false); setEnded(false); setCtls(false); setT({ cur: 0, dur: 0 });
     v.src = VIDEO_DIR + file;
     v.play().catch(() => setCtls(true));
-  }, [open, file]);
+  }, [open, file, textOnly]);
 
   useEffect(() => {
     const unlock = () => {
       const v = vid.current;
-      if (!v || v.src) return;
+      if (!v || v.src || textOnly) return;
       v.src = VIDEO_DIR + fileRef.current;
       v.play().then(() => v.pause()).catch(() => {});
     };
@@ -69,7 +70,7 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
       document.removeEventListener('touchend', unlock, opts);
       document.removeEventListener('click', unlock, opts);
     };
-  }, []);
+  }, [textOnly]);
 
   function seekTo(x: number) {
     const v = vid.current; const r = track.current?.getBoundingClientRect();
@@ -116,7 +117,14 @@ export default function Player({ open, stop, file, guide, T, hasPrev, isLast, pr
             onTimeUpdate={() => { const v = vid.current; if (v && !seeking.current) setT({ cur: v.currentTime, dur: v.duration || 0 }); }}
             onEnded={() => { setEnded(true); setCtls(false); onEnded(); }}
           />
-          {!has && (
+          {textOnly && (
+            <article class="max-h-full overflow-y-auto px-6 py-8 text-white">
+              <p class="text-sm text-white/60">{T.stop} {stop.num} · {stop.p}</p>
+              <h2 class="mt-3 font-serif text-2xl">{stop.t}</h2>
+              <p class="mt-5 text-base leading-relaxed">{stop.d}</p>
+            </article>
+          )}
+          {!has && !textOnly && (
             <div class="px-[22px] py-[26px] text-center text-[#8b9aa5]">
               <div class="mx-auto mb-3.5 grid h-[54px] w-[54px] place-items-center rounded-full bg-white/[0.07]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 7.5v9l7.5-4.5L9 7.5z" fill="#8B9AA5" /></svg>

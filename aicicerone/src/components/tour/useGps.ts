@@ -4,12 +4,13 @@ import { GEO, checkArrival, fmtDist, nearest, type Arrival, type Fix } from '../
 import type { StopItem } from '../../lib/stops';
 
 // Tracciamento in primo piano: watchPosition ad alta precisione + Wake Lock per tenere lo schermo
-// acceso (in background il browser non riceve fix). Se non arriva un fix utile — permesso negato,
-// niente segnale, HTTPS assente, utente a più di 1 km dal tour — parte la simulazione demo; il primo
-// fix reale vicino al tour la interrompe: sul campo il GPS vero vince sempre.
+// acceso (in background il browser non riceve fix). Gli arrivi vengono SOLO dalla posizione reale:
+// se il GPS non c'è — permesso negato, niente segnale, HTTPS assente — l'app lo dice e non inventa
+// arrivi. La simulazione demo (tappa corrente "raggiunta" ogni pochi secondi) parte solo con `?demo`
+// nell'URL, per le dimostrazioni in ufficio; il primo fix reale vicino al tour la interrompe.
 // ponytail: geofencing in background = app nativa/Capacitor (NOTE §6), fuori dalla portata del web.
 
-export type Gps = { on: boolean; sim: boolean; pos: Fix | null };
+export type Gps = { on: boolean; sim: boolean; pos: Fix | null; err: string | null };
 
 type Opts = {
   stops: StopItem[];
@@ -22,10 +23,13 @@ type Opts = {
   onSnack: (msg: string, ms?: number) => void;
 };
 
+const demo = (): boolean => new URLSearchParams(location.search).has('demo');
+
 export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   const [on, setOn] = useState(false);
   const [sim, setSim] = useState(false);
   const [pos, setPos] = useState<Fix | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const o = useRef(opts);
   o.current = opts;
   const live = useRef({ on: false, sim: false, pos: null as Fix | null });
@@ -34,6 +38,7 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   const lock = useRef<WakeLockSentinel | null>(null);
   const arrival = useRef<Arrival>(null);
   const hit = useRef(new Set<number>());
+  const farShown = useRef(false);
 
   const armSim = useCallback(() => {
     if (simTimer.current) clearTimeout(simTimer.current);
@@ -42,7 +47,9 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     }, GEO.simDelay);
   }, []);
 
+  // GPS non utilizzabile: senza `?demo` si avvisa soltanto (nessun arrivo finto); con `?demo` parte la simulazione.
   const simMode = useCallback((msg: string) => {
+    if (!demo()) { setErr(msg); o.current.onSnack(msg, 4200); return; }
     if (live.current.sim) return;
     live.current.sim = true;
     setSim(true);
@@ -63,8 +70,12 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     const first = !live.current.pos;
     live.current.pos = fix;
     setPos(fix);
+    setErr(null);
     const { d } = nearest(fix, o.current.stops);
-    if (d > GEO.far) { simMode(`${fmtDist(d, o.current.lang)} ${o.current.T.gpsFar}`); return; }
+    if (d > GEO.far) {
+      if (demo()) { simMode(`${fmtDist(d, o.current.lang)} ${o.current.T.gpsFar}`); return; }
+      if (!farShown.current) { farShown.current = true; o.current.onSnack(`${fmtDist(d, o.current.lang)} ${o.current.T.gpsFar}`, 4200); }
+    }
     if (first || live.current.sim) {
       if (simTimer.current) clearTimeout(simTimer.current);
       live.current.sim = false;
@@ -87,7 +98,7 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
 
   const stop = useCallback(() => {
     live.current = { on: false, sim: false, pos: null };
-    setOn(false); setSim(false); setPos(null);
+    setOn(false); setSim(false); setPos(null); setErr(null);
     if (simTimer.current) clearTimeout(simTimer.current);
     if (watch.current != null) navigator.geolocation.clearWatch(watch.current);
     watch.current = null;
@@ -99,7 +110,8 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
 
   const start = useCallback(() => {
     live.current = { on: true, sim: false, pos: null };
-    setOn(true); setSim(false); setPos(null);
+    setOn(true); setSim(false); setPos(null); setErr(null);
+    farShown.current = false;
     hit.current.clear();
     arrival.current = null;
     if (!('geolocation' in navigator)) { simMode(o.current.T.gpsSim); return; }
@@ -123,5 +135,5 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     return () => { document.removeEventListener('visibilitychange', onVis); stop(); };
   }, [stop, wake]);
 
-  return { gps: { on, sim, pos }, toggle };
+  return { gps: { on, sim, pos, err }, toggle };
 }

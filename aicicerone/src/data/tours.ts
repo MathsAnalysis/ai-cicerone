@@ -102,7 +102,7 @@ export const TOURS: Record<string, Tour> = {
       {
         "t": "St Paul's Cathedral",
         "p": "St Paul's Churchyard, EC4M",
-        "r": 100,
+        "r": 70,
         "c": [
           51.51371,
           -0.0995

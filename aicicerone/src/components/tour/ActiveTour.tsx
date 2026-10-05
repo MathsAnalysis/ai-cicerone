@@ -97,7 +97,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
     const d = dist([gps.pos.lat, gps.pos.lng], s.c);
     const acc = Math.round(gps.pos.acc);
     notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > (s.r ?? GEO.radius) * 1.5 ? ` · ${T.gpsWeak}` : ''}`;
-  } else notice = gps.sim ? T.noticeSim : gps.on ? T.noticeGps : T.notice;
+  } else notice = gps.sim ? T.noticeSim : gps.err ?? (gps.on ? T.noticeGps : T.notice);
 
   const toastStop = toast != null ? stops[toast] : null;
 

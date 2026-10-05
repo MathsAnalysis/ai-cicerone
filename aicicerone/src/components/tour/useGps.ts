@@ -99,8 +99,9 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
       setSim(false);
       o.current.onSnack(`${o.current.T.gpsFix} ±${Math.round(fix.acc)} m`);
     }
+    if (o.current.playerOpen) { arrival.current = null; return; }
     const skip = new Set<number>([...o.current.skip, ...hit.current]);
-    const r = checkArrival(arrival.current, fix, o.current.stops, skip);
+    const r = checkArrival(arrival.current, fix, o.current.stops, skip, o.current.current);
     arrival.current = r.next;
     if (r.arrived != null) {
       hit.current.add(r.arrived);

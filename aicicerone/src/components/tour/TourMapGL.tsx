@@ -95,9 +95,10 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
     const lib = ml.current; const m = map.current;
     if (!lib || !m || !ready) return;
     const shown = legs ?? stops.slice(1).map((s, i) => [stops[i].c, s.c]);
-    (m.getSource('legs') as GeoJSONSource).setData({ type: 'FeatureCollection', features: shown.map((pts, i) => line(pts, { done: i < current })) });
+    (m.getSource('legs') as GeoJSONSource).setData({ type: 'FeatureCollection', features: follow ? [] : shown.map((pts, i) => line(pts, { done: i < current })) });
     markers.current.forEach((k) => k.remove());
-    markers.current = stops.map((s, n) => {
+    markers.current = stops.flatMap((s, n) => {
+      if (follow && n !== current) return [];
       const cur = n === current;
       const node = document.createElement('div');
       node.className = `mk${cur ? ' cur' : ''}${done.has(n) && !cur ? ' done' : ''}${s.isOpt ? ' opt' : ''}`;
@@ -113,8 +114,7 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
       node.addEventListener('click', () => pick.current(n));
       return new lib.Marker({ element: node, anchor: 'center' }).setLngLat(lngLat(s.c)).addTo(m);
     });
-    if (follow && pos) m.fitBounds(new lib.LngLatBounds(lngLat([pos.lat, pos.lng]), lngLat([pos.lat, pos.lng])).extend(lngLat(stops[current].c)), { padding: 40, maxZoom: 17, duration: 600 });
-    else m.easeTo({ center: lngLat(stops[current].c), zoom: current === 0 ? 14.5 : 16, duration: 600 });
+    if (!follow) m.easeTo({ center: lngLat(stops[current].c), zoom: current === 0 ? 14.5 : 16, duration: 600 });
     const t = setTimeout(() => map.current?.resize(), 120);
     return () => clearTimeout(t);
   }, [ready, legs, stops, current, done, follow]);
@@ -136,12 +136,11 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
       const node = document.createElement('div');
       node.className = 'me-dot';
       me.current = new lib.Marker({ element: node, anchor: 'center' }).setLngLat(ll).addTo(m);
-      if (follow) m.fitBounds(new lib.LngLatBounds(ll, ll).extend(lngLat(stops[current].c)), { padding: 40, maxZoom: 17, duration: 600 });
     } else {
       me.current.setLngLat(ll);
-      if (follow && !m.getBounds().contains(ll)) m.panTo(ll);
     }
-  }, [ready, pos]);
+    if (follow) m.easeTo({ center: ll, zoom: 17, duration: 600 });
+  }, [ready, pos, follow]);
 
   useEffect(() => {
     const m = map.current;
@@ -151,13 +150,13 @@ export default function TourMap({ routeKey, center, stops, current, done, pos, f
     const from = navFrom.current;
     const at: LatLng = [pos.lat, pos.lng];
     if (from && from.n === current && dist(at, from.at) < GEO.reroute) return;
-    navFrom.current = { n: current, at };
-    let alive = true;
+    nav.setData(empty());
+    const request = { n: current, at };
+    navFrom.current = request;
     leg(at, stops[current].c).then((pts) => {
-      if (!alive || !map.current || navFrom.current?.n !== current) return;
+      if (!map.current || navFrom.current !== request) return;
       (map.current.getSource('nav') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [line(pts)] });
     });
-    return () => { alive = false; };
   }, [ready, pos, current, follow]);
 
   return <div ref={el} class="z-0 mt-3 min-h-[210px] flex-1 bg-beige" aria-label="Map" />;

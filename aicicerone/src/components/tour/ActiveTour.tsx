@@ -77,6 +77,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
   }
 
   function advance() {
+    if (gps.on) setPlayer(false);
     if (last) { setPlayer(false); markDone(i); showSnack(T.done, 3600); }
     else next();
   }
@@ -154,7 +155,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
       <Player
         open={player} stop={s} file={videoFile(tourId, s)} guide={guide} T={T}
         hasPrev={i > 0} isLast={last} prevName={i > 0 ? stops[i - 1].t : ''} nextName={last ? '' : stops[i + 1].t}
-        onPrev={() => setI(i - 1)} onNext={advance} onClose={() => setPlayer(false)} onEnded={() => markDone(i)} onSnack={showSnack}
+        onPrev={() => setI(i - 1)} onNext={advance} onClose={() => setPlayer(false)} onEnded={() => { if (follow) advance(); else markDone(i); }} onSnack={showSnack}
       />
 
       <div class="toast" data-on={toast != null} role="status" aria-live="polite">

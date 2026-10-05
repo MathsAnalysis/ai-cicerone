@@ -51,9 +51,11 @@ export function checkArrival(
   fix: Fix,
   stops: readonly { c: LatLng; r?: number }[],
   skip: ReadonlySet<number>,
+  current: number,
 ): { next: Arrival; arrived: number | null } {
   const { n, d } = nearest(fix, stops);
-  if (n < 0) return { next: null, arrived: null };
+  if (n < 0 || n !== current) return { next: null, arrived: null };
+  if (prev?.n !== current) prev = null;
   const r = stops[n].r ?? GEO.radius;
   if (fix.acc > r * GEO.accRatio) return { next: prev, arrived: null };
   if (skip.has(n) || d > r) return { next: null, arrived: null };

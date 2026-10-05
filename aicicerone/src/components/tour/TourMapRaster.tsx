@@ -59,12 +59,13 @@ export default function TourMapRaster({ routeKey, center, stops, current, done, 
     if (!lf || !m || !g) return;
     g.clearLayers();
     const shown = legs ?? stops.slice(1).map((s, i) => [stops[i].c, s.c]);
-    shown.forEach((pts, i) => {
+    if (!follow) shown.forEach((pts, i) => {
       lf.polyline(pts, { color: '#ffffff', weight: 7, opacity: 0.85 }).addTo(g);
       lf.polyline(pts, { color: '#6B7580', weight: 3, dashArray: '2 7', opacity: 0.9 }).addTo(g);
       if (i < current) lf.polyline(pts, { color: '#2C5F8A', weight: 4, opacity: 0.95 }).addTo(g);
     });
     stops.forEach((s, n) => {
+      if (follow && n !== current) return;
       const cur = n === current;
       const cls = `mk${cur ? ' cur' : ''}${done.has(n) && !cur ? ' done' : ''}${s.isOpt ? ' opt' : ''}`;
       const html = `<div class="${cls}"><b>${s.num}</b>${cur ? `<span class="mklabel">${s.t}</span>` : ''}</div>`;
@@ -73,8 +74,7 @@ export default function TourMapRaster({ routeKey, center, stops, current, done, 
         .addTo(g)
         .on('click', () => pick.current(n));
     });
-    if (follow && pos) m.fitBounds([[pos.lat, pos.lng], stops[current].c], { padding: [36, 36], maxZoom: 17 });
-    else m.setView(stops[current].c, current === 0 ? 15 : 16, { animate: true });
+    if (!follow) m.setView(stops[current].c, current === 0 ? 15 : 16, { animate: true });
     const t = setTimeout(() => map.current?.invalidateSize(), 120);
     return () => clearTimeout(t);
   }, [ready, legs, stops, current, done, follow]);
@@ -92,13 +92,12 @@ export default function TourMapRaster({ routeKey, center, stops, current, done, 
     if (!me.current || !acc.current) {
       acc.current = lf.circle(ll, { radius: pos.acc, color: '#2C5F8A', weight: 1, opacity: 0.35, fillOpacity: 0.08, interactive: false }).addTo(m);
       me.current = lf.circleMarker(ll, { radius: 7, color: '#fff', weight: 2.5, fillColor: '#2C5F8A', fillOpacity: 1, interactive: false }).addTo(m);
-      if (follow) m.fitBounds([ll, stops[current].c], { padding: [36, 36], maxZoom: 17 });
     } else {
       acc.current.setLatLng(ll).setRadius(pos.acc);
       me.current.setLatLng(ll);
-      if (follow && !m.getBounds().contains(ll)) m.panTo(ll);
     }
-  }, [ready, pos]);
+    if (follow) m.setView(ll, 17, { animate: true });
+  }, [ready, pos, follow]);
 
   useEffect(() => {
     const lf = L.current; const m = map.current;
@@ -107,14 +106,14 @@ export default function TourMapRaster({ routeKey, center, stops, current, done, 
     const from = navFrom.current;
     const at: LatLng = [pos.lat, pos.lng];
     if (from && from.n === current && dist(at, from.at) < GEO.reroute) return;
-    navFrom.current = { n: current, at };
-    let alive = true;
+    nav.current?.remove(); nav.current = null;
+    const request = { n: current, at };
+    navFrom.current = request;
     leg(at, stops[current].c).then((pts) => {
-      if (!alive || !map.current || navFrom.current?.n !== current) return;
+      if (!map.current || navFrom.current !== request) return;
       nav.current?.remove();
       nav.current = lf.polyline(pts, { color: '#B85C38', weight: 4.5, opacity: 0.95 }).addTo(map.current);
     });
-    return () => { alive = false; };
   }, [ready, pos, current, follow]);
 
   return <div ref={el} class="z-0 mt-3 min-h-[210px] flex-1 bg-beige" aria-label="Map" />;

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEST, TOURS, CHAT, CHIPS } from '../data/tours.ts';
+import { DEST, TOURS, CHAT, CHIPS, VIDEOS } from '../data/tours.ts';
 
-test('London exposes both working tours', () => {
-  assert.deepEqual(DEST.london.tours, ['rebuilding', 'westminster']);
+test('London exposes all three working tours', () => {
+  assert.deepEqual(DEST.london.tours, ['rebuilding', 'icons', 'westminster']);
   for (const id of DEST.london.tours) {
     assert.ok(!TOURS[id].soon);
     assert.ok(TOURS[id].stops.length > 0);
@@ -31,4 +31,16 @@ test('Westminster has all seven ordered stops including Trafalgar Square', () =>
 test('existing London tour retains its eight stops and video mode', () => {
   assert.equal(TOURS.rebuilding.stops.length, 8);
   assert.ok(!TOURS.rebuilding.textOnly);
+});
+
+
+test('London Icons restores the original stop order and corresponding films', () => {
+  const tour = TOURS.icons;
+  assert.ok(tour, 'London Icons must be available');
+  assert.deepEqual(tour.stops.map((s) => s.t), ['Piccadilly Circus', 'Trafalgar Square', 'Buckingham Palace']);
+  assert.deepEqual(VIDEOS.icons, ['Ldn-icons-01-piccadilly', 'Ldn-icons-02-trafalgar', 'Ldn-icons-03-buckingham']);
+  assert.equal(tour.guides[0].id, 'wildeholmes');
+  assert.ok(CHAT.wildeholmes?.length);
+  assert.ok(CHIPS.wildeholmes?.length);
+  assert.ok(!tour.textOnly && !tour.soon);
 });

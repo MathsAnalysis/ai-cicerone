@@ -13,10 +13,11 @@ export const DEST: Record<string, Dest> = {
   "london": {
     "name": "London",
     "lang": "en",
-    "sub": "2 bespoke tours · English",
+    "sub": "3 bespoke tours · English",
     "badge": "L",
     "tours": [
       "rebuilding",
+      "icons",
       "westminster"
     ],
     "pickEyebrow": "Choose your bespoke tour in",
@@ -160,6 +161,55 @@ export const TOURS: Record<string, Tour> = {
       }
     ],
     "sub": "8 stops · ≈ 2h 30′ · estimate"
+  },
+  "icons": {
+    "name": "London Icons",
+    "city": "London",
+    "region": "United Kingdom",
+    "dur": "≈ 1h · estimate",
+    "center": [
+      51.5055,
+      -0.134
+    ],
+    "guides": [
+      {
+        "id": "wildeholmes",
+        "name": "Oscar Wilde & Sherlock Holmes",
+        "role": "AI Living Guides",
+        "bio": "Two voices, one walk. Wilde reads the West End as a stage; Holmes reads the Palace as a case to be solved.",
+        "init": "W·H"
+      }
+    ],
+    "stops": [
+      {
+        "t": "Piccadilly Circus",
+        "p": "Shaftesbury Memorial Fountain, W1J",
+        "c": [
+          51.50985,
+          -0.13459
+        ],
+        "d": "Oscar Wilde: the city's drawing room, lit all night. Everyone passes through here eventually, and most of them pretend they meant to."
+      },
+      {
+        "t": "Trafalgar Square",
+        "p": "Nelson's Column, WC2N",
+        "c": [
+          51.50774,
+          -0.12797
+        ],
+        "d": "Oscar Wilde: a square built to celebrate a victory, and used ever since to argue about everything else."
+      },
+      {
+        "t": "Buckingham Palace",
+        "p": "Victoria Memorial, SW1A",
+        "c": [
+          51.50197,
+          -0.14057
+        ],
+        "d": "Sherlock Holmes: observe the flag, the guard, the windows. The Palace tells you who is at home long before anyone announces it."
+      }
+    ],
+    "sub": "3 stops · ≈ 1h · estimate"
   },
   "westminster": {
     "name": "Westminster: Parliament & the Abbey",
@@ -581,6 +631,11 @@ export const TOURS: Record<string, Tour> = {
 };
 
 export const VIDEOS: Record<string, string[] | string> = {
+  "icons": [
+    "Ldn-icons-01-piccadilly",
+    "Ldn-icons-02-trafalgar",
+    "Ldn-icons-03-buckingham"
+  ],
   "rebuilding": [
     "Ldn-01-guildhall",
     "Ldn-02-st-bartholomew",
@@ -629,6 +684,9 @@ export const VIDEOS: Record<string, string[] | string> = {
 };
 
 export const CHAT: Record<string, string[]> = {
+  "wildeholmes": [
+    "Wilde here — Holmes is listening, as usual. Ask me about the theatre of the West End, or ask him what the Palace gives away."
+  ],
   "londoner": ["Welcome to Westminster. We will walk from Parliament Square to Trafalgar Square, passing the Abbey, Whitehall, the park, Buckingham Palace and Piccadilly Circus. Ask me about the place in front of you or the next stop."],
   "wren": [
     "I rebuilt fifty-two churches in this city and buried myself under one of them. Ask me about stone, fire, or what London refused to let me build."
@@ -644,6 +702,12 @@ export const CHAT: Record<string, string[]> = {
   ]
 };
 export const CHIPS: Record<string, string[]> = {
+  "wildeholmes": [
+    "Why is Piccadilly a circus?",
+    "Who was Nelson?",
+    "Is the King at home?",
+    "How far to the next stop?"
+  ],
   "londoner": ["What can I see here?", "Where is the next stop?", "Tell me about Trafalgar Square", "Does this tour go inside the buildings?"],
   "wren": [
     "Why is the dome that shape?",
@@ -671,6 +735,11 @@ export const CHIPS: Record<string, string[]> = {
   ]
 };
 export const REPLY: Record<string, string[]> = {
+  "wildeholmes": [
+    "Wilde: 'circus' simply means a circle where roads meet. The spectacle came later, and it has never left.",
+    "Holmes: the Royal Standard flies when the sovereign is in residence; the Union Flag when he is not. Elementary, and visible from where you stand.",
+    "AiCicerone doesn't pretend to be infallible. If a date or a name looks wrong to you, use «Report a discrepancy» and the editorial team will check it."
+  ],
   "londoner": ["This tour follows public streets and park paths. Visits inside the buildings are separate; check their official information for entry and opening times."],
   "wren": [
     "The Fire of 1666 cleared four-fifths of the walled city in four days. What you walk through is not old London — it is the answer to that fire.",

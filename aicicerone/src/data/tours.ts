@@ -13,7 +13,7 @@ export const DEST: Record<string, Dest> = {
   "london": {
     "name": "London",
     "lang": "en",
-    "sub": "3 bespoke tours · English",
+    "sub": "2 bespoke tours · English",
     "badge": "L",
     "tours": [
       "rebuilding",
@@ -212,6 +212,7 @@ export const TOURS: Record<string, Tour> = {
     "sub": "3 stops · ≈ 1h · estimate"
   },
   "westminster": {
+    "soon": true,
     "name": "Westminster: Parliament & the Abbey",
     "city": "London",
     "region": "United Kingdom",

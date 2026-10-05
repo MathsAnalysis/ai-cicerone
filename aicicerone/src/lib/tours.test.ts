@@ -2,9 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEST, TOURS, CHAT, CHIPS, VIDEOS } from '../data/tours.ts';
 
-test('London exposes all three working tours', () => {
+test('London exposes two active tours and keeps Westminster disabled', () => {
   assert.deepEqual(DEST.london.tours, ['rebuilding', 'icons', 'westminster']);
-  for (const id of DEST.london.tours) {
+  assert.equal(TOURS.westminster.soon, true);
+  const active = DEST.london.tours.filter((id) => !TOURS[id].soon);
+  assert.deepEqual(active, ['rebuilding', 'icons']);
+  for (const id of active) {
     assert.ok(!TOURS[id].soon);
     assert.ok(TOURS[id].stops.length > 0);
     assert.ok(TOURS[id].guides.some((g) => !g.soon));

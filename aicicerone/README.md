@@ -59,7 +59,7 @@ Per NVIDIA scommentare il blocco `deploy` del servizio `ollama`. Su Mac Apple Si
 `src/lib/geo.ts` (regole pure, testate) + `src/components/tour/useGps.ts` (browser):
 
 - `watchPosition` ad alta precisione, `maximumAge: 0`; i fix vecchi di oltre 15 s o con precisione peggiore di 200 m sono scartati, la posizione è **filtrata** (peso inversamente proporzionale all'imprecisione, quindi un fix rumoroso non sposta un fix preciso) e l'interfaccia si aggiorna solo se ci si muove di almeno 2 m; al ritorno in primo piano il tracciamento riparte se non arrivano fix da più di 15 s; il fix arriva dal GNSS del telefono via sistema operativo. **Wake Lock** tiene lo schermo acceso: in background il browser non riceve posizioni.
-- Arrivo a una tappa: la candidata è la **tappa più vicina in assoluto** (così due tappe a 30 m — Amenano e Pescheria — non si innescano a vicenda), non ancora incontrata, entro il suo raggio (`GEO.radius` = 50 m, cioè 100 m di diametro; per-tappa con il campo `r` in `src/data/tours.ts`: 60–150 m per piazze, parchi, aree archeologiche e monumenti grandi in tutti i tour — St Paul's, Villa Bellini, Castello Maniace, Neapolis…), con precisione del fix ≤ 1,2 × raggio, confermata da **3 fix consecutivi**. Ordine non vincolante: si può arrivare alla 7 prima della 6. All'arrivo reale **il video della guida parte da solo** (il primo tap sulla pagina sblocca l'autoplay su iOS); la notifica con tasto resta per la simulazione e per quando un altro video è già in corso.
+- Arrivo a una tappa: solo la **tappa corrente**, se è anche la più vicina e non ancora incontrata. Raggio massimo **50 m**, rispettando eventuali raggi configurati più piccoli. Quando un’altra tappa è a meno di 100 m, il raggio di ciascuna è limitato al **45% della distanza dalla vicina più prossima**: a 20 m di distanza diventano circa 9 m ciascuno, con uno spazio tra le due aree. Il confronto include tutte le tappe del tour, anche non consecutive e già visitate; le tappe opzionali sono incluse quando abilitate. Due coordinate identiche richiedono l’apertura manuale. La precisione deve essere ≤ 30 m e ≤ 1,2 × raggio effettivo, con **3 fix consecutivi**; una lettura imprecisa interrompe la conferma. Gli arrivi usano la lettura reale, senza il ritardo del filtro della mappa. All’arrivo reale **il video della guida parte da solo** (il primo tap sulla pagina sblocca l’autoplay su iOS); la notifica con tasto resta per la simulazione e per quando un altro video è già in corso.
 - Sulla mappa: punto blu, cerchio di precisione, **percorso pedonale dalla posizione attuale alla tappa** (OSRM, ricalcolato ogni 80 m), inquadratura che segue utente + tappa. Sotto la mappa: distanza alla tappa e precisione («Prossima tappa a 120 m · GPS ±12 m»).
 - Senza GPS utilizzabile (permesso negato, nessun segnale entro 15 s, **pagina non HTTPS**, utente a più di 1 km dal tour) l'app **lo dice e non fa scattare nessuna tappa**: gli arrivi vengono solo dalla posizione reale. Il pulsante «Incontra la tua guida» resta sempre disponibile. La **simulazione demo** (la tappa corrente viene «raggiunta» ogni pochi secondi) parte solo aprendo l'URL con `?demo`, per le dimostrazioni in ufficio; il primo fix reale vicino al tour la interrompe.
 - Limite del web: niente geofencing in background né notifiche di sistema → per il prodotto finale serve l'app nativa/Capacitor (vedi `consegna-carlo/NOTE-IMPLEMENTAZIONE.md` §6).
@@ -104,3 +104,22 @@ Per aggiungere destinazioni, tour o tappe si lavora solo in `src/data/tours.ts`:
 ## Cosa resta fuori (come nella demo)
 
 Offline-first (tile e video in bundle), persistenza dello stato del tour, geofencing in background, sottotitoli e accessibilità: vedi `consegna-carlo/NOTE-IMPLEMENTAZIONE.md` §7, §8, §11.
+
+## HTTPS sull’IP della VPS
+
+L’indirizzo pubblico è **https://208.113.211.142**. Il certificato Let’s Encrypt contiene l’IP nel Subject Alternative Name; HTTP reindirizza a HTTPS mantenendo percorso e parametri. Non serve un dominio.
+
+La configurazione attiva corrisponde a `deploy/nginx/aicicerone.conf`. La directory `/var/www/letsencrypt` serve le verifiche ACME sulla porta 80. Il certificato usa il profilo `shortlived` (circa 6 giorni): **il rinnovo automatico è necessario**.
+
+I file `deploy/systemd/aicicerone-certbot.service` e `.timer` sono installati in `/etc/systemd/system/`. Il timer controlla il rinnovo due volte al giorno tramite l’immagine `certbot/certbot:v5.4.0`; dopo il controllo nginx verifica e ricarica la configurazione. Certificati e account restano in `/etc/letsencrypt`, fuori dal repository.
+
+Verifiche operative:
+
+```bash
+curl -I http://208.113.211.142/london/icons/  # 308 verso HTTPS
+curl -I https://208.113.211.142/london/icons/ # 200, verifica TLS attiva
+sudo systemctl list-timers aicicerone-certbot.timer
+sudo journalctl -u aicicerone-certbot.service
+```
+
+Il browser richiede comunque il consenso alla posizione. Su iPhone abilitare «Posizione precisa» per Safari nelle impostazioni di localizzazione; la precisione effettiva dipende dal dispositivo e dal segnale. L’app richiede alta precisione e mostra l’incertezza misurata, senza promettere una precisione hardware.

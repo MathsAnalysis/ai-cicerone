@@ -1,11 +1,55 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkArrival, dist, fmtDist, nearest, smooth, type Arrival, type Fix, type LatLng } from './geo.ts';
+import { TOURS } from '../data/tours.ts';
+import { arrivalRadius, checkArrival, dist, fmtDist, nearest, smooth, type Arrival, type Fix, type LatLng } from './geo.ts';
 
 const AMENANO: LatLng = [37.5019, 15.0876];
 const PESCHERIA: LatLng = [37.50166, 15.0874];
 const STOPS = [{ c: AMENANO }, { c: PESCHERIA }];
 const at = (p: LatLng, acc = 10): Fix => ({ lat: p[0], lng: p[1], acc });
+
+const CLOSE = [{ c: [0, 0] as LatLng }, { c: [0, 0.00018] as LatLng }]; // ≈20 m
+
+test('isolated stops retain 50 metres, including formerly larger radii', () => {
+  assert.equal(arrivalRadius([{ c: AMENANO, r: 150 }], 0), 50);
+  assert.equal(arrivalRadius([{ c: AMENANO, r: 20 }], 0), 20);
+});
+
+test('stops 20 metres apart have separate arrival areas of about 9 metres', () => {
+  const a = arrivalRadius(CLOSE, 0), b = arrivalRadius(CLOSE, 1);
+  assert.ok(a > 8 && a < 10);
+  assert.ok(b > 8 && b < 10);
+  assert.ok(a + b < dist(CLOSE[0].c, CLOSE[1].c));
+  const midpoint: Fix = { lat: 0, lng: 0.00009, acc: 3 };
+  assert.equal(checkArrival({ n: 0, count: 2 }, midpoint, CLOSE, new Set(), 0).arrived, null);
+  assert.equal(checkArrival({ n: 1, count: 2 }, midpoint, CLOSE, new Set(), 1).arrived, null);
+  assert.equal(checkArrival({ n: 0, count: 2 }, at(CLOSE[0].c, 3), CLOSE, new Set(), 0).arrived, 0);
+  assert.equal(checkArrival({ n: 1, count: 2 }, at(CLOSE[1].c, 3), CLOSE, new Set([0]), 1).arrived, 1);
+});
+
+test('nonconsecutive stops constrain the radius too', () => {
+  const stops = [CLOSE[0], { c: [1, 1] as LatLng }, CLOSE[1]];
+  assert.ok(arrivalRadius(stops, 0) < 10);
+  assert.equal(arrivalRadius(stops, 1), 50);
+});
+
+test('coincident stops do not automatically trigger ambiguous arrivals', () => {
+  const stops = [CLOSE[0], CLOSE[0]];
+  assert.equal(arrivalRadius(stops, 0), 0);
+  assert.equal(checkArrival({ n: 0, count: 2 }, at(CLOSE[0].c, 1), stops, new Set(), 0).arrived, null);
+});
+
+test('arrival areas do not overlap in any configured tour, including optional stops', () => {
+  for (const [id, tour] of Object.entries(TOURS)) {
+    const stops = [...tour.stops, ...(tour.optional ? [tour.optional] : [])];
+    for (let i = 0; i < stops.length; i++) {
+      for (let j = i + 1; j < stops.length; j++) {
+        const sum = arrivalRadius(stops, i) + arrivalRadius(stops, j);
+        assert.ok(sum <= dist(stops[i].c, stops[j].c), `${id}: ${stops[i].t} / ${stops[j].t}`);
+      }
+    }
+  }
+});
 
 test('dist: Piazza Duomo → Castello Ursino ≈ 640 m', () => {
   const d = dist([37.5024, 15.0874], [37.4972, 15.0844]);
@@ -64,11 +108,25 @@ test('per-stop radius overrides the default', () => {
   assert.equal(tight.arrived, null);
 });
 
-test('a fix less precise than the radius is ignored without resetting the count', () => {
+test('an imprecise fix breaks the consecutive arrival confirmations', () => {
   const prev = { n: 0, count: 2 };
   const r = checkArrival(prev, at(AMENANO, 70), [{ c: AMENANO }], new Set(), 0);
   assert.equal(r.arrived, null);
-  assert.deepEqual(r.next, prev);
+  assert.equal(r.next, null);
+});
+
+test('a large stop radius never accepts a GPS uncertainty of 100 metres', () => {
+  const r = checkArrival({ n: 0, count: 2 }, at(AMENANO, 100), [{ c: AMENANO, r: 150 }], new Set(), 0);
+  assert.equal(r.arrived, null);
+  assert.equal(r.next, null);
+});
+
+test('an invalid GPS fix cannot confirm an arrival', () => {
+  for (const fix of [at(AMENANO, NaN), at(AMENANO, 0), { lat: NaN, lng: AMENANO[1], acc: 5 }]) {
+    const r = checkArrival({ n: 0, count: 2 }, fix, [{ c: AMENANO }], new Set(), 0);
+    assert.equal(r.arrived, null);
+    assert.equal(r.next, null);
+  }
 });
 
 test('smooth: first fix passes through', () => {

@@ -6,6 +6,7 @@ export const GEO = {
   radius: 50,
   hits: 3,
   accRatio: 1.2,
+  arrivalMaxAcc: 30,
   maxAcc: 200,
   maxAge: 15000,
   minMove: 2,
@@ -46,6 +47,19 @@ export function smooth(prev: Fix | null, fix: Fix, dt: number): Fix {
   return { lat: prev.lat + k * (fix.lat - prev.lat), lng: prev.lng + k * (fix.lng - prev.lng), acc: fix.acc };
 }
 
+export function arrivalRadius(stops: readonly { c: LatLng; r?: number }[], current: number): number {
+  const stop = stops[current];
+  if (!stop) return 0;
+  let radius = Math.min(GEO.radius, stop.r ?? GEO.radius);
+  for (let i = 0; i < stops.length; i++) {
+    if (i === current) continue;
+    const distance = dist(stop.c, stops[i].c);
+    // Reserve a gap between neighbouring areas; never grow after a stop is visited.
+    if (distance < 2 * GEO.radius) radius = Math.min(radius, distance * 0.45);
+  }
+  return radius;
+}
+
 export function checkArrival(
   prev: Arrival,
   fix: Fix,
@@ -53,11 +67,12 @@ export function checkArrival(
   skip: ReadonlySet<number>,
   current: number,
 ): { next: Arrival; arrived: number | null } {
+  if (![fix.lat, fix.lng, fix.acc].every(Number.isFinite) || fix.acc <= 0 || Math.abs(fix.lat) > 90 || Math.abs(fix.lng) > 180) return { next: null, arrived: null };
   const { n, d } = nearest(fix, stops);
   if (n < 0 || n !== current) return { next: null, arrived: null };
   if (prev?.n !== current) prev = null;
-  const r = stops[n].r ?? GEO.radius;
-  if (fix.acc > r * GEO.accRatio) return { next: prev, arrived: null };
+  const r = arrivalRadius(stops, n);
+  if (fix.acc > Math.min(GEO.arrivalMaxAcc, r * GEO.accRatio)) return { next: null, arrived: null };
   if (skip.has(n) || d > r) return { next: null, arrived: null };
   const count = prev && prev.n === n ? prev.count + 1 : 1;
   if (count >= GEO.hits) return { next: null, arrived: n };

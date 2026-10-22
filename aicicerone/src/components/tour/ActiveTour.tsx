@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Guide, Lang, Tour } from '../../data/tours';
 import { fill, type Dict } from '../../i18n';
-import { GEO, dist, fmtDist } from '../../lib/geo';
+import { GEO, arrivalRadius, dist, fmtDist } from '../../lib/geo';
 import { stopList, transferIndex, videoFile } from '../../lib/stops';
 import ChatSheet from './ChatSheet';
 import FlagSheet from './FlagSheet';
@@ -94,7 +94,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
   else if (follow && gps.pos) {
     const d = dist([gps.pos.lat, gps.pos.lng], s.c);
     const acc = Math.round(gps.pos.acc);
-    notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > (s.r ?? GEO.radius) * GEO.accRatio ? ` · ${T.gpsWeak}` : ''}`;
+    notice = `${fill(T.nextAt, { d: fmtDist(d, lang) })} · GPS ±${acc} m${acc > Math.min(GEO.arrivalMaxAcc, arrivalRadius(stops, i) * GEO.accRatio) ? ` · ${T.gpsWeak}` : ''}`;
   } else notice = gps.sim ? T.noticeSim : gps.err ?? (gps.on ? T.noticeGps : T.notice);
 
   const toastStop = toast != null ? stops[toast] : null;
@@ -109,7 +109,7 @@ export default function ActiveTour({ dest, tourId, tour, guide, lang, T }: Props
         </div>
         <button type="button" class="btn-gps" aria-pressed={gps.on} onClick={toggle}>
           <span class="dot" />
-          <span>{gps.sim ? T.gpsDemo : gps.on ? T.gpsOn : T.gpsOff}</span>
+          <span>{gps.sim ? T.gpsDemo : gps.on ? (gps.pos ? T.gpsOn : T.gpsSearching) : T.gpsOff}</span>
         </button>
       </div>
       <div class="flex gap-[3px] px-5 pt-2.5" aria-hidden="true">

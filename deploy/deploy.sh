@@ -20,7 +20,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 for i in $(seq 1 20); do
-  if curl -fsS -o /dev/null http://127.0.0.1/; then
+  if curl -fsS -o /dev/null http://127.0.0.1:4321/; then
     echo "deploy ok: $(git rev-parse --short HEAD)"
     exit 0
   fi

@@ -72,8 +72,14 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   }, []);
 
   const onFix = useCallback((p: GeolocationPosition) => {
+    if (!live.current.on) return;
     const now = Date.now();
-    if (now - p.timestamp > GEO.maxAge || p.coords.accuracy > GEO.maxAcc) return;
+    if (!Number.isFinite(p.timestamp) || now - p.timestamp > GEO.maxAge || p.timestamp > now + 1000 ||
+      ![p.coords.latitude, p.coords.longitude, p.coords.accuracy].every(Number.isFinite) ||
+      p.coords.accuracy <= 0 || p.coords.accuracy > GEO.maxAcc) {
+      arrival.current = null;
+      return;
+    }
     const raw: Fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
     const prev = live.current.pos;
     const fix = smooth(prev, raw, (now - live.current.at) / 1000);
@@ -101,7 +107,8 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
     }
     if (o.current.playerOpen) { arrival.current = null; return; }
     const skip = new Set<number>([...o.current.skip, ...hit.current]);
-    const r = checkArrival(arrival.current, fix, o.current.stops, skip, o.current.current);
+    // Confirm arrival with the real measurement: smoothing can lag behind a walker.
+    const r = checkArrival(arrival.current, raw, o.current.stops, skip, o.current.current);
     arrival.current = r.next;
     if (r.arrived != null) {
       hit.current.add(r.arrived);
@@ -110,6 +117,8 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   }, [clearErr, unavailable]);
 
   const onErr = useCallback((e: GeolocationPositionError) => {
+    if (!live.current.on) return;
+    arrival.current = null;
     if (live.current.pos) return;
     unavailable(e.code === e.PERMISSION_DENIED ? o.current.T.gpsDenied : o.current.T.gpsSim);
   }, [unavailable]);
@@ -134,6 +143,10 @@ export function useGps(opts: Opts): { gps: Gps; toggle: () => void } {
   }, []);
 
   const start = useCallback(() => {
+    if (!demo() && (!('geolocation' in navigator) || !window.isSecureContext)) {
+      unavailable(!window.isSecureContext ? o.current.T.gpsHttps : o.current.T.gpsSim);
+      return;
+    }
     live.current = { on: true, sim: false, pos: null, at: 0 };
     shown.current = null;
     setOn(true); setSim(false); setPos(null); setErr(null);
